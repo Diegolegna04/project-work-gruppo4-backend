@@ -1,8 +1,8 @@
 package com.example.rest;
 
-import com.example.persistence.AuthRepository;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
+import com.example.service.AuthService;
 import com.example.service.exception.EmailNotAvailable;
 import com.example.service.exception.EmailNotVerified;
 import com.example.service.exception.TelephoneNotAvailable;
@@ -16,11 +16,11 @@ import jakarta.ws.rs.core.Response;
 @Path("/auth")
 public class AuthResource {
 
-    private final AuthRepository repository;
+    private final AuthService service;
 
     @Inject
-    public AuthResource(AuthRepository authRepository) {
-        this.repository = authRepository;
+    public AuthResource(AuthService service) {
+        this.service = service;
     }
 
 
@@ -30,7 +30,7 @@ public class AuthResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response register(UtenteRegisterRequest u) throws EmailNotAvailable, TelephoneNotAvailable {
-        return repository.registerUser(u);
+        return service.registerUser(u);
     }
 
     // EMAIL VERIFYING SENDING METHOD
@@ -38,7 +38,7 @@ public class AuthResource {
     @Path("/verify")
     @Produces(MediaType.TEXT_PLAIN)
     public Response verifyEmail(@QueryParam("token") String token) {
-        return repository.verifyEmail(token);
+        return service.verifyEmail(token);
     }
 
     // LOGIN METHOD
@@ -47,8 +47,6 @@ public class AuthResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response login(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified {
-        return repository.loginUser(u);
+        return service.loginUser(u);
     }
-
-    // TODO: modificare il ruolo in User una volta verificata l'email
 }
