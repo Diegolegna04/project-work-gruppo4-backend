@@ -103,14 +103,3 @@ public class Utente {
         this.verificationToken = verificationToken;
     }
 }
-
-
-
-//  create table utente (
-//      id int auto_increment primary key,
-//      nome varchar(100) not null,
-//      cognome varchar(100) not null,
-//      email varchar(200) not null,
-//      password varchar(255) not null,
-//      telefono varchar(15) null
-//  );

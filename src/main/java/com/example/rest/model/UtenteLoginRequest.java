@@ -10,9 +10,6 @@ public class UtenteLoginRequest {
         this.telefono = telefono;
         this.password = password;
     }
-    public UtenteLoginRequest(){
-
-    }
 
     public String getEmail() {
         return email;
