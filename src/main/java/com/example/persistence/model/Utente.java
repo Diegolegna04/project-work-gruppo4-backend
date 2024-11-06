@@ -19,15 +19,16 @@ public class Utente {
     private String password;
     @Column(name = "telefono", length = 10)
     private String telefono;
+    @Enumerated(EnumType.STRING)
     @Column(name = "ruolo")
-    private String ruolo;
+    private Ruolo ruolo;
     @Column(name = "token_verifica")
     private String verificationToken;
 
     public Utente() {
 
     }
-    public Utente(Integer id, String nome, String cognome, String email, String password, String telefono, String ruolo, String verificationToken) {
+    public Utente(Integer id, String nome, String cognome, String email, String password, String telefono, Ruolo ruolo, String verificationToken) {
         this.id = id;
         this.nome = nome;
         this.cognome = cognome;
@@ -87,12 +88,12 @@ public class Utente {
         this.telefono = telefono;
     }
 
-    public String getRuolo() {
+    public Ruolo getRuolo() {
         return ruolo;
     }
 
-    public void setRuolo(String ruolo) {
-        this.ruolo = "non verificato";
+    public void setRuolo(Ruolo ruolo) {
+        this.ruolo = ruolo;
     }
 
     public String getVerificationToken() {

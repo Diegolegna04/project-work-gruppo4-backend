@@ -4,6 +4,7 @@ import com.example.persistence.AuthRepository;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
 import com.example.service.exception.EmailNotAvailable;
+import com.example.service.exception.EmailNotVerified;
 import com.example.service.exception.TelephoneNotAvailable;
 import com.example.service.exception.WrongUsernameOrPasswordException;
 import jakarta.inject.Inject;
@@ -32,22 +33,6 @@ public class AuthResource {
         return repository.registerUser(u);
     }
 
-    // LOGIN METHOD
-    @POST
-    @Path("/login")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response login(UtenteLoginRequest u) throws WrongUsernameOrPasswordException {
-        return repository.loginUser(u);
-    }
-
-    // EMAIL SENDING METHOD
-    @GET
-    @Path("/email")
-    public Response sendTestEmail(@CookieParam("SESSION_COOKIE") String sessionCookie) {
-        return repository.sendTestEmail(sessionCookie);
-    }
-
     // EMAIL VERIFYING SENDING METHOD
     @GET
     @Path("/verify")
@@ -56,6 +41,14 @@ public class AuthResource {
         return repository.verifyEmail(token);
     }
 
+    // LOGIN METHOD
+    @POST
+    @Path("/login")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response login(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified {
+        return repository.loginUser(u);
+    }
 
     // TODO: modificare il ruolo in User una volta verificata l'email
 }

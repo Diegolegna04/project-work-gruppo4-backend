@@ -1,11 +1,13 @@
 package com.example.persistence;
 
+import com.example.persistence.model.Ruolo;
 import com.example.persistence.model.Sessione;
 import com.example.persistence.model.Utente;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
 import com.example.service.AuthService;
 import com.example.service.exception.EmailNotAvailable;
+import com.example.service.exception.EmailNotVerified;
 import com.example.service.exception.TelephoneNotAvailable;
 import com.example.service.exception.WrongUsernameOrPasswordException;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
@@ -20,6 +22,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -59,14 +62,20 @@ public class AuthRepository implements PanacheRepository<Utente> {
         newUtente.setEmail(u.getEmail());
         newUtente.setPassword(authService.hashPassword(u.getPassword()));
         newUtente.setTelefono(u.getTelefono());
-        newUtente.setRuolo("non verificato");
+        newUtente.setRuolo(Ruolo.Non_verificato);
         // Persist it
         persist(newUtente);
-        return Response.ok("Registrazione avvenuta con successo").build();
+
+        sendVerificationEmail(newUtente.getId(), newUtente.getEmail());
+        return Response.ok("Registrazione avvenuta con successo.\nControlla la tua casella di posta e verifica la tua email!").build();
     }
 
     @Transactional
-    public Response loginUser(UtenteLoginRequest u) throws WrongUsernameOrPasswordException {
+    public Response loginUser(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified {
+        Utente utente = find("email", u.getEmail()).firstResult();
+        if (Objects.equals(utente.getRuolo().toString(), "Non_verificato")) {
+            throw new EmailNotVerified();
+        }
         // If credentials are wrong checkCredentials throws a WrongUsernameOrPasswordException
         int idUtente = authService.checkCredentials(u.getEmail(), u.getTelefono(), u.getPassword());
         // Create a new session
@@ -87,50 +96,69 @@ public class AuthRepository implements PanacheRepository<Utente> {
     }
 
     @Transactional
-    public Response sendTestEmail(String sessionCookie){
-        // Find the user by the SESSION_COOKIE value
-        Utente utente = getUtenteBySessionCookie(sessionCookie);
+    public void sendVerificationEmail(Integer id, String email) {
         // Generate a unique token for the verifying method
         String token = UUIDGenerator();
         // Persist it
-        saveToken(utente.getId(), token);
+        saveToken(id, token);
 
         // Build the verification link
         String verificationLink = "http://localhost:8080/auth/verify?token=" + token;
         String message = "Clicca sul <a href=\"" + verificationLink + "\">link</a> di verifica per autenticare la tua email";
         // Send verification
-        mailer.send(Mail.withHtml(utente.getEmail(), "Verifica la tua email", message));
-
-        return Response.ok("Email di verifica inviata a " + utente.getEmail()).build();
+        mailer.send(Mail.withHtml(email, "Verifica la tua email", message));
     }
 
     @Transactional
-    public Response verifyEmail(String token){
-        // Find the user with the token sent in the email
+    public Response verifyEmail(String token) {
+        System.out.println("CIAOCIAOCIAOCIAOCIAO VERIFY EMAIL CHIAMATA");
+        // Trova l'utente con il token inviato nell'email
         Utente utente = find("verificationToken", token).firstResult();
-        // If the user exists => set his role to User (its now verified)
+        System.out.println("CIAOCIAOCIAOCIAOCIAO");
+
+        // Se l'utente esiste, aggiorna il ruolo a "User"
         if (utente != null) {
-            utente.setRuolo("User");
+            System.out.println("CIAOCIAOCIAOCIAOCIAO VERIFY EMAIL CHIAMATA " + utente.getEmail());
+
+            utente.setRuolo(Ruolo.User);
+            System.out.println("CIAOCIAOCIAOCIAOCIAO set effettuato");
+
+            utente.setVerificationToken(null); // Rimuovi il token se non serve più
+
+            // Forza la persistenza delle modifiche
+            persist(utente);
+            // oppure: flush();
+
             return Response.ok("La tua email è stata verificata con successo!").build();
         } else {
             return Response.status(Response.Status.NOT_FOUND).entity("Utente non trovato").build();
         }
     }
 
+//    @Transactional
+//    public Response verifyEmail(String token) {
+//        // Find the user with the token sent in the email
+//        Utente utente = find("verificationToken", token).firstResult();
+//        // If the user exists => set his role to User (its now verified)
+//        if (utente != null) {
+//            utente.setRuolo("User");
+//            return Response.ok("La tua email è stata verificata con successo!").build();
+//        } else {
+//            return Response.status(Response.Status.NOT_FOUND).entity("Utente non trovato").build();
+//        }
+//    }
 
 
-
-
-    private Utente getUtenteBySessionCookie(String sessionCookie) {
-        // Find the session from the value of the SESSION_COOKIE
-        Sessione sessione = entityManager.createQuery(
-                        "SELECT s FROM Sessione s WHERE s.sessionCookie = :sessionCookie", Sessione.class)
-                .setParameter("sessionCookie", sessionCookie)
-                .getSingleResult();
-
-        // Find the user by idUtente value in sessione
-        return find("id", sessione.getIdUtente()).firstResult();
-    }
+//    private Utente getUtenteBySessionCookie(String sessionCookie) {
+//        // Find the session from the value of the SESSION_COOKIE
+//        Sessione sessione = entityManager.createQuery(
+//                        "SELECT s FROM Sessione s WHERE s.sessionCookie = :sessionCookie", Sessione.class)
+//                .setParameter("sessionCookie", sessionCookie)
+//                .getSingleResult();
+//
+//        // Find the user by idUtente value in sessione
+//        return find("id", sessione.getIdUtente()).firstResult();
+//    }
 
     private String UUIDGenerator() {
         return UUID.randomUUID().toString();
