@@ -148,17 +148,15 @@ public class AuthRepository implements PanacheRepository<Utente> {
 //        }
 //    }
 
-
-//    private Utente getUtenteBySessionCookie(String sessionCookie) {
-//        // Find the session from the value of the SESSION_COOKIE
-//        Sessione sessione = entityManager.createQuery(
-//                        "SELECT s FROM Sessione s WHERE s.sessionCookie = :sessionCookie", Sessione.class)
-//                .setParameter("sessionCookie", sessionCookie)
-//                .getSingleResult();
-//
-//        // Find the user by idUtente value in sessione
-//        return find("id", sessione.getIdUtente()).firstResult();
-//    }
+    private Utente getUtenteBySessionCookie(String sessionCookie) {
+        // Find the session from the value of the SESSION_COOKIE
+        Sessione sessione = entityManager.createQuery(
+                "SELECT s FROM Sessione s WHERE s.sessionCookie = :sessionCookie", Sessione.class)
+                .setParameter("sessionCookie", sessionCookie)
+                .getSingleResult();
+        // Find the user by idUtente value in sessione
+       return find("id", sessione.getIdUtente()).firstResult();
+    }
 
     private String UUIDGenerator() {
         return UUID.randomUUID().toString();
@@ -185,4 +183,25 @@ public class AuthRepository implements PanacheRepository<Utente> {
         return find("telefono", telefono).singleResultOptional();
     }
 
+    // Logout
+    @Transactional
+    public boolean logout(String sessionCookie) {
+        Utente utente = getUtenteBySessionCookie(sessionCookie);
+
+        if (utente != null) {
+            try {
+                Sessione sessione = entityManager.createQuery(
+                                "SELECT s FROM Sessione s WHERE s.sessionCookie = :sessionCookie", Sessione.class)
+                        .setParameter("sessionCookie", sessionCookie)
+                        .getSingleResult();
+
+                entityManager.remove(sessione);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
 }
