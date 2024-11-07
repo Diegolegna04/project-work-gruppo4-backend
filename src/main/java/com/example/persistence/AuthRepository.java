@@ -140,27 +140,14 @@ public class AuthRepository implements PanacheRepository<Utente> {
         }
     }
 
-//    @Transactional
-//    public Response verifyEmail(String token) {
-//        // Find the user with the token sent in the email
-//        Utente utente = find("verificationToken", token).firstResult();
-//        // If the user exists => set his role to User (its now verified)
-//        if (utente != null) {
-//            utente.setRuolo("User");
-//            return Response.ok("La tua email è stata verificata con successo!").build();
-//        } else {
-//            return Response.status(Response.Status.NOT_FOUND).entity("Utente non trovato").build();
-//        }
-//    }
-
     private Utente getUtenteBySessionCookie(String sessionCookie) {
         // Find the session from the value of the SESSION_COOKIE
         Sessione sessione = entityManager.createQuery(
-                "SELECT s FROM Sessione s WHERE s.sessionCookie = :sessionCookie", Sessione.class)
+                        "SELECT s FROM Sessione s WHERE s.sessionCookie = :sessionCookie", Sessione.class)
                 .setParameter("sessionCookie", sessionCookie)
                 .getSingleResult();
         // Find the user by idUtente value in sessione
-       return find("id", sessione.getIdUtente()).firstResult();
+        return find("id", sessione.getIdUtente()).firstResult();
     }
 
     private String UUIDGenerator() {
@@ -207,6 +194,15 @@ public class AuthRepository implements PanacheRepository<Utente> {
             }
         } else {
             return false;
+        }
+    }
+
+    public Utente getRuolo(String sessionCookie) {
+        Utente u = getUtenteBySessionCookie(sessionCookie);
+        if (u != null) {
+            return u;
+        } else {
+            return null;
         }
     }
 }
