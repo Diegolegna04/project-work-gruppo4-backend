@@ -3,6 +3,7 @@ package com.example.persistence;
 import com.example.persistence.model.Ruolo;
 import com.example.persistence.model.Sessione;
 import com.example.persistence.model.Utente;
+import com.example.rest.exception.UserNotRegisteredException;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
 import com.example.service.AuthService;
@@ -55,6 +56,12 @@ public class AuthRepository implements PanacheRepository<Utente> {
             throw new TelephoneNotAvailable();
         }
 
+        // Check if the email is valid (allow numbers before @, but not after, and must end with .com or .it)
+        String emailRegex = "^[A-Za-z0-9][A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\\.(com|it)$";
+        if (u.getEmail() == null || !u.getEmail().matches(emailRegex)) {
+            throw new IllegalArgumentException("L'indirizzo email inserito non è valido. Assicurati che non ci siano numeri dopo la @ e che termini con .com o .it");
+        }
+
         // Create a new User
         Utente newUtente = new Utente();
         newUtente.setNome(u.getNome());
@@ -71,8 +78,11 @@ public class AuthRepository implements PanacheRepository<Utente> {
     }
 
     @Transactional
-    public Response loginUser(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified {
+    public Response loginUser(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException {
         Utente utente = find("email", u.getEmail()).firstResult();
+        if (utente == null) {
+            throw new UserNotRegisteredException();
+        }
         if (Objects.equals(utente.getRuolo().toString(), "Non_verificato")) {
             throw new EmailNotVerified();
         }
@@ -111,17 +121,12 @@ public class AuthRepository implements PanacheRepository<Utente> {
 
     @Transactional
     public Response verifyEmail(String token) {
-        System.out.println("CIAOCIAOCIAOCIAOCIAO VERIFY EMAIL CHIAMATA");
         // Trova l'utente con il token inviato nell'email
         Utente utente = find("verificationToken", token).firstResult();
-        System.out.println("CIAOCIAOCIAOCIAOCIAO");
 
         // Se l'utente esiste, aggiorna il ruolo a "User"
         if (utente != null) {
-            System.out.println("CIAOCIAOCIAOCIAOCIAO VERIFY EMAIL CHIAMATA " + utente.getEmail());
-
             utente.setRuolo(Ruolo.User);
-            System.out.println("CIAOCIAOCIAOCIAOCIAO set effettuato");
 
             utente.setVerificationToken(null); // Rimuovi il token se non serve più
 
@@ -162,7 +167,7 @@ public class AuthRepository implements PanacheRepository<Utente> {
         return UUID.randomUUID().toString();
     }
 
-    private void saveToken(Integer idUtente, String token) {
+    public void saveToken(Integer idUtente, String token) {
         // Find the user where to save the verification token
         Utente utente = findById(Long.valueOf(idUtente));
         // If the user exists => save the verification token

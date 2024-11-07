@@ -1,6 +1,7 @@
 package com.example.rest;
 
 import com.example.persistence.AuthRepository;
+import com.example.rest.exception.UserNotRegisteredException;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
 import com.example.service.exception.EmailNotAvailable;
@@ -47,7 +48,7 @@ public class AuthResource {
     @Path("/login")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response login(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified {
+    public Response login(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException {
         return repository.loginUser(u);
     }
 
