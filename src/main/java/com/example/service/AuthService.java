@@ -108,10 +108,8 @@ public class AuthService implements PanacheRepository<Utente> {
 
     @Transactional
     public Response verifyEmail(String token) {
-        System.out.println("CIAOCIAOCIAOCIAOCIAO VERIFY EMAIL CHIAMATA");
         // Trova l'utente con il token inviato nell'email
         Utente utente = find("verificationToken", token).firstResult();
-        System.out.println("CIAOCIAOCIAOCIAOCIAO");
 
         // Se l'utente esiste, aggiorna il ruolo a "User"
         if (utente != null) {

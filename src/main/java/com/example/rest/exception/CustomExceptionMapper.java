@@ -32,6 +32,11 @@ public class CustomExceptionMapper implements ExceptionMapper<Exception> {
                     .entity("Username o password errati")
                     .type("text/plain")
                     .build();
+        } else if (exception instanceof UserNotRegisteredException) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Utente con email inserita inesistente")
+                    .type("text/plain")
+                    .build();
         }
 
         // Default Response
