@@ -1,6 +1,7 @@
 package com.example.rest;
 
 import com.example.persistence.AuthRepository;
+import com.example.persistence.model.Utente;
 import com.example.rest.exception.UserNotRegisteredException;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
@@ -65,5 +66,10 @@ public class AuthResource {
         }
     }
 
-    // TODO: modificare il ruolo in User una volta verificata l'email
+    @GET
+    @Path("/account")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Utente getRuolo(@CookieParam("SESSION_COOKIE") String sessionCookie) {
+        return repository.getRuolo(sessionCookie);
+    }
 }
