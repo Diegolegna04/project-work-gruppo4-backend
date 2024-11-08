@@ -41,7 +41,7 @@ public class CustomExceptionMapper implements ExceptionMapper<Exception> {
 
         // Default Response
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Si è verificato un errore imprevisto.")
+                .entity("Errore imprevisto: " + exception.getMessage())
                 .type("text/plain")
                 .build();
     }

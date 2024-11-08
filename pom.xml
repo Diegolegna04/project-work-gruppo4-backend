@@ -69,6 +69,11 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>bson</artifactId>
+            <version>5.1.4</version>
+        </dependency>
     </dependencies>
 
     <build>

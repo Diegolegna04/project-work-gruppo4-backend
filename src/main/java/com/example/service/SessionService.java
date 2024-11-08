@@ -24,4 +24,22 @@ public class SessionService implements PanacheRepository<Sessione> {
         Utente utente = authService.find("id", sessioneUtente.getIdUtente()).firstResult();
         return utente.getRuolo();
     }
+
+    public String getUserContactBySessionCookie(String sessionCookie){
+        Sessione sessioneUtente = find("sessionCookie", sessionCookie).firstResult();
+        if(sessioneUtente == null){
+            return null;
+        }
+        Utente utente = authService.find("id", sessioneUtente.getIdUtente()).firstResult();
+        if(utente == null){
+            return null;
+        }
+
+        if(utente.getEmail() != null){
+            return utente.getEmail();
+        }else {
+            return utente.getTelefono();
+        }
+
+    }
 }
