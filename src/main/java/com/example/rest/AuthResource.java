@@ -5,6 +5,7 @@ import com.example.persistence.model.Utente;
 import com.example.rest.exception.UserNotRegisteredException;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
+import com.example.service.AuthService;
 import com.example.service.exception.EmailNotAvailable;
 import com.example.service.exception.EmailNotVerified;
 import com.example.service.exception.TelephoneNotAvailable;
@@ -20,10 +21,12 @@ import jakarta.ws.rs.core.Response;
 public class AuthResource {
 
     private final AuthRepository repository;
+    private final AuthService service;
 
     @Inject
-    public AuthResource(AuthRepository authRepository) {
+    public AuthResource(AuthRepository authRepository, AuthService service) {
         this.repository = authRepository;
+        this.service = service;
     }
 
 
@@ -33,7 +36,7 @@ public class AuthResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response register(UtenteRegisterRequest u) throws EmailNotAvailable, TelephoneNotAvailable {
-        return repository.registerUser(u);
+        return service.registerUser(u);
     }
 
     // EMAIL VERIFYING SENDING METHOD
@@ -41,7 +44,7 @@ public class AuthResource {
     @Path("/verify")
     @Produces(MediaType.TEXT_PLAIN)
     public Response verifyEmail(@QueryParam("token") String token) {
-        return repository.verifyEmail(token);
+        return service.verifyEmail(token);
     }
 
     // LOGIN METHOD
@@ -50,7 +53,7 @@ public class AuthResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response login(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException {
-        return repository.loginUser(u);
+        return service.loginUser(u);
     }
 
     // LOGOUT METHOD
@@ -58,7 +61,7 @@ public class AuthResource {
     @Path("/logout")
     @Produces(MediaType.APPLICATION_JSON)
     public Response logout(@CookieParam("SESSION_COOKIE") String sessionCookie) {
-        if (repository.logout(sessionCookie)) {
+        if (service.logout(sessionCookie)) {
             NewCookie session = new NewCookie("SESSION_COOKIE", "", "/", null, null, 0, false);
             return Response.ok("Logout effettuato con successo").cookie(session).build();
         } else {
@@ -70,6 +73,6 @@ public class AuthResource {
     @Path("/account")
     @Produces(MediaType.APPLICATION_JSON)
     public Utente getRuolo(@CookieParam("SESSION_COOKIE") String sessionCookie) {
-        return repository.getRuolo(sessionCookie);
+        return repository.getUtenteBySessionCookie(sessionCookie);
     }
 }

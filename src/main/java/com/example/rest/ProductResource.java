@@ -14,13 +14,13 @@ import java.util.List;
 @Path("/products")
 public class ProductResource {
 
-    private final ProductService productService;
     private final SessionService sessionService;
+    private final ProductService service;
     private final ProductRepository repository;
 
-    public ProductResource(ProductService productService, SessionService sessionService, ProductRepository repository) {
-        this.productService = productService;
+    public ProductResource(SessionService sessionService, ProductService service, ProductRepository repository) {
         this.sessionService = sessionService;
+        this.service = service;
         this.repository = repository;
     }
 
@@ -42,7 +42,7 @@ public class ProductResource {
             return Response.status(Response.Status.UNAUTHORIZED).entity("Non è stata trovata nessuna sessione per questo utente").build();
         }
         if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.Admin)) {
-            return productService.addProduct(product);
+            return service.addProduct(product);
         }
         return Response.status(Response.Status.UNAUTHORIZED).entity("Devi essere un admin per poter inserire un prodotto nel database").build();
     }

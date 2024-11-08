@@ -4,6 +4,7 @@ import com.example.persistence.AuthRepository;
 import com.example.persistence.model.Ruolo;
 import com.example.persistence.model.Sessione;
 import com.example.persistence.model.Utente;
+import com.example.rest.exception.UserNotRegisteredException;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
 import com.example.service.exception.EmailNotAvailable;
@@ -27,21 +28,22 @@ import java.util.UUID;
 @ApplicationScoped
 public class AuthService implements PanacheRepository<Utente> {
 
+    // TODO: sostituire EntityManager con sessionService
     @Inject
     EntityManager entityManager;
 
-    private final HashCalculator hashCalculator;
     private final AuthRepository repository;
     private final Mailer mailer;
+    private final SessionService sessionService;
 
     @Inject
-    public AuthService(HashCalculator hashCalculator, AuthRepository repository, Mailer mailer){
-        this.hashCalculator = hashCalculator;
+    public AuthService(AuthRepository repository, Mailer mailer, SessionService sessionService){
         this.repository = repository;
         this.mailer = mailer;
+        this.sessionService = sessionService;
     }
 
-    // TODO: nella classe Utente se estendo con PanacheEntity posso non inserire l'id (sia come private Integer che come generativeStrategy)
+
 
     @Transactional
     public Response registerUser(UtenteRegisterRequest u) throws EmailNotAvailable, TelephoneNotAvailable {
@@ -57,39 +59,14 @@ public class AuthService implements PanacheRepository<Utente> {
         newUtente.setNome(u.getNome());
         newUtente.setCognome(u.getCognome());
         newUtente.setEmail(u.getEmail());
-        newUtente.setPassword(hashPassword(u.getPassword()));
+        newUtente.setPassword(repository.hashPassword(u.getPassword()));
         newUtente.setTelefono(u.getTelefono());
         newUtente.setRuolo(Ruolo.Non_verificato);
         // Persist it
         persist(newUtente);
-
+        // Send the verification link to the user email
         sendVerificationEmail(newUtente.getId(), newUtente.getEmail());
         return Response.ok("Registrazione avvenuta con successo.\nControlla la tua casella di posta e verifica la tua email!").build();
-    }
-
-    @Transactional
-    public Response loginUser(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified {
-        Utente utente = find("email", u.getEmail()).firstResult();
-        if (Objects.equals(utente.getRuolo().toString(), "Non_verificato")) {
-            throw new EmailNotVerified();
-        }
-        // If credentials are wrong checkCredentials throws a WrongUsernameOrPasswordException
-        int idUtente = checkCredentials(u.getEmail(), u.getTelefono(), u.getPassword());
-        // Create a new session
-        Sessione newSessione = new Sessione();
-        newSessione.setSessionCookie(UUIDGenerator());
-        newSessione.setDate(LocalDate.now());
-        newSessione.setTime(LocalTime.now());
-        newSessione.setIdUtente(idUtente);
-        // Persist it
-        entityManager.persist(newSessione);
-        // Return Response and build the cookie
-        return Response.ok("Sessione creata correttamente").
-                cookie(new NewCookie.Builder("SESSION_COOKIE")
-                        .value(newSessione.getSessionCookie())
-                        .path("/")
-                        .build())
-                .build();
     }
 
     @Transactional
@@ -108,22 +85,70 @@ public class AuthService implements PanacheRepository<Utente> {
 
     @Transactional
     public Response verifyEmail(String token) {
-        // Trova l'utente con il token inviato nell'email
+        // Find the user that have the verification token sent to email
         Utente utente = find("verificationToken", token).firstResult();
 
-        // Se l'utente esiste, aggiorna il ruolo a "User"
+        // If the user exists change role from "Non_verificato" to "User"
         if (utente != null) {
             utente.setRuolo(Ruolo.User);
+            // Delete the verification token
             utente.setVerificationToken(null);
-
-//            persist(utente);
             return Response.ok("La tua email è stata verificata con successo!").build();
         } else {
             return Response.status(Response.Status.NOT_FOUND).entity("Utente non trovato").build();
         }
     }
 
+    @Transactional
+    public Response loginUser(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException {
+        // Find the user by the email
+        Utente utente = find("email", u.getEmail()).firstResult();
+        if (utente == null) {
+            throw new UserNotRegisteredException(); // If user doesn't exist it's not registered
+        }
+        if (Objects.equals(utente.getRuolo().toString(), "Non_verificato")) {
+            throw new EmailNotVerified(); // If user's role is "Non_verificato" he can't have access to the ecommerce
+        }
+        // If credentials are wrong checkCredentials throws a WrongUsernameOrPasswordException
+        int idUtente = checkCredentials(u.getEmail(), u.getTelefono(), u.getPassword());
+        // Create a new session
+        Sessione newSessione = new Sessione();
+        newSessione.setSessionCookie(UUIDGenerator());
+        newSessione.setDate(LocalDate.now());
+        newSessione.setTime(LocalTime.now());
+        newSessione.setIdUtente(idUtente);
+        // Persist it
+        sessionService.persist(newSessione);
+        // Return Response and build the cookie
+        return Response.ok("Sessione creata correttamente").
+                cookie(new NewCookie.Builder("SESSION_COOKIE")
+                        .value(newSessione.getSessionCookie())
+                        .path("/")
+                        .build())
+                .build();
+    }
 
+    @Transactional
+    public boolean logout(String sessionCookie) {
+        // Find the user by the session cookie value
+        Utente utente = repository.getUtenteBySessionCookie(sessionCookie);
+        // If it exists delete his session and return true
+        if (utente != null) {
+            try {
+                Sessione sessione = entityManager.createQuery(
+                                "SELECT s FROM Sessione s WHERE s.sessionCookie = :sessionCookie", Sessione.class)
+                        .setParameter("sessionCookie", sessionCookie)
+                        .getSingleResult();
+
+                entityManager.remove(sessione);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
 
 
 
@@ -131,14 +156,9 @@ public class AuthService implements PanacheRepository<Utente> {
         return UUID.randomUUID().toString();
     }
 
-    // Hash the password
-    public String hashPassword(String password) {
-        return hashCalculator.hashPassword(password);
-    }
-
     // Check if the credentials used for the login are correct
     public int checkCredentials(String email, String telefono, String password) throws WrongUsernameOrPasswordException {
-        String hashedPassword = hashPassword(password);
+        String hashedPassword = repository.hashPassword(password);
         Utente utente = new Utente();
 
         // Find teh user by email or password

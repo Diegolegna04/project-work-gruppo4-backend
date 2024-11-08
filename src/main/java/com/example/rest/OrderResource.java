@@ -8,19 +8,17 @@ import com.example.service.SessionService;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
 import java.util.List;
-import java.util.Optional;
 
 
 @Path("/order")
 public class OrderResource {
 
-    private final OrderService orderService;
+    private final OrderService service;
     private final SessionService sessionService;
 
-    public OrderResource(OrderService orderService, SessionService sessionService) {
-        this.orderService = orderService;
+    public OrderResource(OrderService service, SessionService sessionService) {
+        this.service = service;
         this.sessionService = sessionService;
     }
 
@@ -29,14 +27,14 @@ public class OrderResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response makeAOrder(@CookieParam("SESSION_COOKIE") String sessionCookie, OrderRequest order) {
         String contact = sessionService.getUserContactBySessionCookie(sessionCookie);
-        return orderService.makeAOrder(contact, order);
+        return service.makeAOrder(contact, order);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getOrders(@CookieParam("SESSION_COOKIE") String sessionCookie) {
         if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.Admin)) {
-            List<Order> orders = orderService.getAllOrders();
+            List<Order> orders = service.getAllOrders();
             return Response.ok(orders).build();
         } else {
             return Response.status(Response.Status.UNAUTHORIZED).build();
