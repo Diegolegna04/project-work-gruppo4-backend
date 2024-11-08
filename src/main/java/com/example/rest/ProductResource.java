@@ -25,6 +25,22 @@ public class ProductResource {
     }
 
 
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Product> getProducts(@CookieParam("SESSION_COOKIE") String sessionCookie) {
+        if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.Admin)) {
+            return repository.getAllProducts();
+        } else if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.User)) {
+            return repository.getAllProductsForUsers();
+        }
+        return List.of();
+    }
+
+
+    // ADMIN METHODS
+
+    // JSON FOR SIMULATING THE POST
 //    {
 //            "name":"Millefoglie",
 //            "description":"Una torta multistrati con crema alla vaniglia e scaglie di cioccolato",
@@ -47,15 +63,4 @@ public class ProductResource {
         return Response.status(Response.Status.UNAUTHORIZED).entity("Devi essere un admin per poter inserire un prodotto nel database").build();
     }
 
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<Product> getProducts(@CookieParam("SESSION_COOKIE") String sessionCookie) {
-        if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.Admin)) {
-            return repository.getAllProducts();
-        } else if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.User)) {
-            return repository.getAllProductsForUsers();
-        }
-        return List.of();
-    }
 }

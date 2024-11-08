@@ -57,6 +57,15 @@ public class OrderService implements PanacheMongoRepository<Order> {
         return listAll();
     }
 
+    public List<Order> getAllUserOrders(String contact) {
+        if (isValidEmail(contact)) {
+            return find("email", contact).list();
+        } else {
+            return find("phone", contact).list();
+        }
+
+    }
+
 
 
 
