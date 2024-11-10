@@ -11,39 +11,44 @@ public class SessionService implements PanacheRepository<Sessione> {
 
     private final AuthService authService;
 
-    public SessionService (AuthService authService){
+    public SessionService(AuthService authService) {
         this.authService = authService;
     }
 
 
-    public Ruolo getUserRoleBySessionCookie(String sessionCookie){
+    public Ruolo getUserRoleBySessionCookie(String sessionCookie) {
         Sessione sessioneUtente = find("sessionCookie", sessionCookie).firstResult();
-        if(sessioneUtente == null){
+        if (sessioneUtente == null) {
             return null;
         }
         Utente utente = authService.find("id", sessioneUtente.getIdUtente()).firstResult();
         return utente.getRuolo();
     }
 
-    public String getUserContactBySessionCookie(String sessionCookie){
+    public String getUserContactBySessionCookie(String sessionCookie) {
         Sessione sessioneUtente = find("sessionCookie", sessionCookie).firstResult();
-        if(sessioneUtente == null){
+        if (sessioneUtente == null) {
             return null;
         }
         Utente utente = authService.find("id", sessioneUtente.getIdUtente()).firstResult();
-        if(utente == null){
+        if (utente == null) {
             return null;
         }
 
-        if(utente.getEmail() != null){
+        if (utente.getEmail() != null) {
             return utente.getEmail();
-        }else {
+        } else {
             return utente.getTelefono();
         }
 
     }
 
-    public Sessione findSessioneByCookie(String sessionCookie){
+    public Sessione findSessioneByCookie(String sessionCookie) {
         return find("sessionCookie", sessionCookie).firstResult();
+    }
+
+    public boolean userSessionAlreadyExists(Integer idUtente) {
+        Sessione userSessionAlreadyExists = find("idUtente", idUtente).firstResult();
+        return userSessionAlreadyExists != null;
     }
 }

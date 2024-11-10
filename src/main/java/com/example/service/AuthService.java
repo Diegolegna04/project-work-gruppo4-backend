@@ -113,7 +113,7 @@ public class AuthService implements PanacheRepository<Utente> {
     }
 
     @Transactional
-    public Response loginUser(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException, ContactNotInserted, PasswordCannotBeEmpty {
+    public Response loginUser(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException, ContactNotInserted, PasswordCannotBeEmpty, LoginNotPossible {
         Utente utente = new Utente();
         // Find the user by the contact method
         if ((u.getEmail() != null && !u.getEmail().isEmpty()) || (u.getTelefono() != null && !u.getTelefono().isEmpty())) {
@@ -138,7 +138,11 @@ public class AuthService implements PanacheRepository<Utente> {
             throw new EmailNotVerified(); // If user's role is "Non_verificato" he can't have access to the ecommerce
         }
         // If credentials are wrong checkCredentials throws a WrongUsernameOrPasswordException
-        int idUtente = checkCredentials(u.getEmail(), u.getTelefono(), u.getPassword());
+        Integer idUtente = checkCredentials(u.getEmail(), u.getTelefono(), u.getPassword());
+
+        if (sessionService.userSessionAlreadyExists(idUtente)){
+            throw new LoginNotPossible();
+        }
         // Create a new session
         Sessione newSessione = new Sessione();
         newSessione.setSessionCookie(UUIDGenerator());
@@ -181,7 +185,7 @@ public class AuthService implements PanacheRepository<Utente> {
     }
 
     // Check if the credentials used for the login are correct
-    public int checkCredentials(String email, String telefono, String password) throws WrongUsernameOrPasswordException {
+    public Integer checkCredentials(String email, String telefono, String password) throws WrongUsernameOrPasswordException {
         String hashedPassword = repository.hashPassword(password);
         Utente utente = new Utente();
 

@@ -44,6 +44,11 @@ public class CustomExceptionMapper implements ExceptionMapper<Exception> {
                     .entity("Inserire una password")
                     .type("text/plain")
                     .build();
+        } else if (exception instanceof LoginNotPossible) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Per poter effettuare nuovamente il login eseguire prima il logout")
+                    .type("text/plain")
+                    .build();
         }
 
         // Default Response

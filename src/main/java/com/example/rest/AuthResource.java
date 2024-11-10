@@ -47,7 +47,7 @@ public class AuthResource {
     @Path("/login")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response login(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException, ContactNotInserted, PasswordCannotBeEmpty {
+    public Response login(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException, ContactNotInserted, PasswordCannotBeEmpty, LoginNotPossible {
         return service.loginUser(u);
     }
 
