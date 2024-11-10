@@ -4,22 +4,19 @@ import com.example.persistence.AuthRepository;
 import com.example.persistence.model.Ruolo;
 import com.example.persistence.model.Sessione;
 import com.example.persistence.model.Utente;
-import com.example.rest.exception.UserNotRegisteredException;
+import com.example.service.exception.UserNotRegisteredException;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
-import com.example.service.exception.EmailNotAvailable;
-import com.example.service.exception.EmailNotVerified;
-import com.example.service.exception.TelephoneNotAvailable;
-import com.example.service.exception.WrongUsernameOrPasswordException;
+import com.example.service.exception.*;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Objects;
@@ -28,30 +25,43 @@ import java.util.UUID;
 @ApplicationScoped
 public class AuthService implements PanacheRepository<Utente> {
 
-    // TODO: sostituire EntityManager con sessionService
-    @Inject
-    EntityManager entityManager;
-
     private final AuthRepository repository;
     private final Mailer mailer;
     private final SessionService sessionService;
+    private final CartService cartService;
 
     @Inject
-    public AuthService(AuthRepository repository, Mailer mailer, SessionService sessionService){
+    public AuthService(AuthRepository repository, Mailer mailer, SessionService sessionService, CartService cartService) {
         this.repository = repository;
         this.mailer = mailer;
         this.sessionService = sessionService;
+        this.cartService = cartService;
     }
 
 
-
     @Transactional
-    public Response registerUser(UtenteRegisterRequest u) throws EmailNotAvailable, TelephoneNotAvailable {
-        // Check if the email or phone number the user want to register with already exists in DB
-        if (repository.utenteWithMailAlreadyExists(u.getEmail()).isPresent()) {
-            throw new EmailNotAvailable();
-        } else if (repository.utenteWithTelephoneAlreadyExists(u.getTelefono()).isPresent()) {
-            throw new TelephoneNotAvailable();
+    public Response registerUser(UtenteRegisterRequest u) throws EmailNotAvailable, TelephoneNotAvailable, ContactNotInserted, PasswordCannotBeEmpty {
+        // Check the user inserted at least one contact method
+        if ((u.getEmail() == null || u.getEmail().isEmpty()) && (u.getTelefono() == null || u.getTelefono().isEmpty())) {
+            throw new ContactNotInserted();
+        }
+
+        // If the user inserted email as contact method
+        if (u.getEmail() != null && !u.getEmail().isEmpty()){
+            // If the inserted email is already in use throw EmailNotAvailable
+            if (repository.utenteWithMailAlreadyExists(u.getEmail()).isPresent()) {
+                throw new EmailNotAvailable();
+            }
+        } else {
+            // If the inserted phone is already in use throw TelephoneNotAvailable
+            if (repository.utenteWithTelephoneAlreadyExists(u.getTelefono()).isPresent()) {
+                throw new TelephoneNotAvailable();
+            }
+        }
+
+        // Check the password is not empty
+        if (u.getPassword() == null || u.getPassword().isEmpty()) {
+            throw new PasswordCannotBeEmpty();
         }
 
         // Create a new User
@@ -90,9 +100,12 @@ public class AuthService implements PanacheRepository<Utente> {
 
         // If the user exists change role from "Non_verificato" to "User"
         if (utente != null) {
+            // Set user role to "User" (verified)
             utente.setRuolo(Ruolo.User);
             // Delete the verification token
             utente.setVerificationToken(null);
+            // Create a new cart for the user
+            cartService.createNewEmptyCart(utente.getId());
             return Response.ok("La tua email è stata verificata con successo!").build();
         } else {
             return Response.status(Response.Status.NOT_FOUND).entity("Utente non trovato").build();
@@ -100,9 +113,24 @@ public class AuthService implements PanacheRepository<Utente> {
     }
 
     @Transactional
-    public Response loginUser(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException {
-        // Find the user by the email
-        Utente utente = find("email", u.getEmail()).firstResult();
+    public Response loginUser(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException, ContactNotInserted, PasswordCannotBeEmpty {
+        Utente utente = new Utente();
+        // Find the user by the contact method
+        if ((u.getEmail() != null && !u.getEmail().isEmpty()) || (u.getTelefono() != null && !u.getTelefono().isEmpty())) {
+            if (u.getEmail() != null && !u.getEmail().isEmpty()) {
+                utente = find("email", u.getEmail()).firstResult();
+            } else {
+                utente = find("telefono", u.getTelefono()).firstResult();
+            }
+        } else {
+            throw new ContactNotInserted();
+        }
+
+        if (u.getPassword() == null || u.getPassword().isEmpty()) {
+            throw new PasswordCannotBeEmpty();
+        }
+
+
         if (utente == null) {
             throw new UserNotRegisteredException(); // If user doesn't exist it's not registered
         }
@@ -135,12 +163,8 @@ public class AuthService implements PanacheRepository<Utente> {
         // If it exists delete his session and return true
         if (utente != null) {
             try {
-                Sessione sessione = entityManager.createQuery(
-                                "SELECT s FROM Sessione s WHERE s.sessionCookie = :sessionCookie", Sessione.class)
-                        .setParameter("sessionCookie", sessionCookie)
-                        .getSingleResult();
-
-                entityManager.remove(sessione);
+                Sessione sessione = sessionService.findSessioneByCookie(sessionCookie);
+                sessionService.delete(sessione);
                 return true;
             } catch (Exception e) {
                 return false;
@@ -174,12 +198,16 @@ public class AuthService implements PanacheRepository<Utente> {
         }
 
         // If the credentials are wrong => WrongUsernameOrPasswordException
-        if (!hashedPassword.equals(utente.getPassword())){
+        if (!hashedPassword.equals(utente.getPassword())) {
             throw new WrongUsernameOrPasswordException();
-        }else {
+        } else {
             // The id is used as user referral in the session
             return utente.getId();
         }
     }
 
+    // Get user by the session cookie value
+    public Utente getUtenteBySessionCookie(String sessionCookie){
+        return repository.getUtenteBySessionCookie(sessionCookie);
+    }
 }

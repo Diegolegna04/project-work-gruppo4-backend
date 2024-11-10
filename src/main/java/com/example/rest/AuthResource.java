@@ -2,14 +2,11 @@ package com.example.rest;
 
 import com.example.persistence.AuthRepository;
 import com.example.persistence.model.Utente;
-import com.example.rest.exception.UserNotRegisteredException;
+import com.example.service.exception.UserNotRegisteredException;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
 import com.example.service.AuthService;
-import com.example.service.exception.EmailNotAvailable;
-import com.example.service.exception.EmailNotVerified;
-import com.example.service.exception.TelephoneNotAvailable;
-import com.example.service.exception.WrongUsernameOrPasswordException;
+import com.example.service.exception.*;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -20,12 +17,10 @@ import jakarta.ws.rs.core.Response;
 @Path("/auth")
 public class AuthResource {
 
-    private final AuthRepository repository;
     private final AuthService service;
 
     @Inject
-    public AuthResource(AuthRepository authRepository, AuthService service) {
-        this.repository = authRepository;
+    public AuthResource(AuthService service) {
         this.service = service;
     }
 
@@ -35,7 +30,7 @@ public class AuthResource {
     @Path("/register")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response register(UtenteRegisterRequest u) throws EmailNotAvailable, TelephoneNotAvailable {
+    public Response register(UtenteRegisterRequest u) throws EmailNotAvailable, TelephoneNotAvailable, ContactNotInserted, PasswordCannotBeEmpty {
         return service.registerUser(u);
     }
 
@@ -52,7 +47,7 @@ public class AuthResource {
     @Path("/login")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response login(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException {
+    public Response login(UtenteLoginRequest u) throws WrongUsernameOrPasswordException, EmailNotVerified, UserNotRegisteredException, ContactNotInserted, PasswordCannotBeEmpty {
         return service.loginUser(u);
     }
 
@@ -69,10 +64,11 @@ public class AuthResource {
         }
     }
 
+    // GET YOUR PROFILE (used for customizing the dashboard with user info)
     @GET
     @Path("/account")
     @Produces(MediaType.APPLICATION_JSON)
-    public Utente getRuolo(@CookieParam("SESSION_COOKIE") String sessionCookie) {
-        return repository.getUtenteBySessionCookie(sessionCookie);
+    public Utente getUtente(@CookieParam("SESSION_COOKIE") String sessionCookie) {
+        return service.getUtenteBySessionCookie(sessionCookie);
     }
 }

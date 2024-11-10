@@ -1,4 +1,4 @@
-package com.example.rest.exception;
+package com.example.service.exception;
 
 public class UserNotRegisteredException extends Exception {
 

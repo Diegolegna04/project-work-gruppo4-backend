@@ -42,4 +42,8 @@ public class SessionService implements PanacheRepository<Sessione> {
         }
 
     }
+
+    public Sessione findSessioneByCookie(String sessionCookie){
+        return find("sessionCookie", sessionCookie).firstResult();
+    }
 }

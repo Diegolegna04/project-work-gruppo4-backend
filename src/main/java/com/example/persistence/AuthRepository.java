@@ -1,59 +1,32 @@
 package com.example.persistence;
 
-import com.example.persistence.model.Ruolo;
 import com.example.persistence.model.Sessione;
 import com.example.persistence.model.Utente;
-import com.example.rest.exception.UserNotRegisteredException;
-import com.example.rest.model.UtenteLoginRequest;
-import com.example.rest.model.UtenteRegisterRequest;
-import com.example.service.AuthService;
 import com.example.service.HashCalculator;
 import com.example.service.SessionService;
-import com.example.service.exception.EmailNotAvailable;
-import com.example.service.exception.EmailNotVerified;
-import com.example.service.exception.TelephoneNotAvailable;
-import com.example.service.exception.WrongUsernameOrPasswordException;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
-import io.quarkus.mailer.Mail;
-import io.quarkus.mailer.Mailer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
-import jakarta.ws.rs.core.NewCookie;
-import jakarta.ws.rs.core.Response;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 @ApplicationScoped
 public class AuthRepository implements PanacheRepository<Utente> {
 
-    @Inject
-    EntityManager entityManager;
-
     private final HashCalculator hashCalculator;
+    private final SessionService sessionService;
 
     @Inject
-    public AuthRepository(HashCalculator hashCalculator) {
+    public AuthRepository(HashCalculator hashCalculator, SessionService sessionService) {
         this.hashCalculator = hashCalculator;
+        this.sessionService = sessionService;
     }
 
-
-
-
-    // TODO: sostituire EntityManager con sessionService
 
     // Find User by the session cookie value
     public Utente getUtenteBySessionCookie(String sessionCookie) {
         // Find the session from the value of the SESSION_COOKIE
-        Sessione sessione = entityManager.createQuery(
-                        "SELECT s FROM Sessione s WHERE s.sessionCookie = :sessionCookie", Sessione.class)
-                .setParameter("sessionCookie", sessionCookie)
-                .getSingleResult();
+        Sessione sessione = sessionService.findSessioneByCookie(sessionCookie);
         // Find the user by idUtente value in sessione
         return find("id", sessione.getIdUtente()).firstResult();
     }

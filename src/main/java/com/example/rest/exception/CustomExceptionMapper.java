@@ -1,9 +1,6 @@
 package com.example.rest.exception;
 
-import com.example.service.exception.EmailNotAvailable;
-import com.example.service.exception.EmailNotVerified;
-import com.example.service.exception.TelephoneNotAvailable;
-import com.example.service.exception.WrongUsernameOrPasswordException;
+import com.example.service.exception.*;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -35,6 +32,16 @@ public class CustomExceptionMapper implements ExceptionMapper<Exception> {
         } else if (exception instanceof UserNotRegisteredException) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Utente con email inserita inesistente")
+                    .type("text/plain")
+                    .build();
+        } else if (exception instanceof ContactNotInserted) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Inserire almeno un contatto (email o telefono)")
+                    .type("text/plain")
+                    .build();
+        } else if (exception instanceof PasswordCannotBeEmpty) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Inserire una password")
                     .type("text/plain")
                     .build();
         }
