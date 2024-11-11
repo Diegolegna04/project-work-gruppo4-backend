@@ -30,7 +30,7 @@ public class CustomExceptionMapper implements ExceptionMapper<Exception> {
                     .type("text/plain")
                     .build();
         } else if (exception instanceof UserNotRegisteredException) {
-            return Response.status(Response.Status.BAD_REQUEST)
+            return Response.status(Response.Status.NOT_FOUND)
                     .entity("Utente con email inserita inesistente")
                     .type("text/plain")
                     .build();
@@ -45,7 +45,7 @@ public class CustomExceptionMapper implements ExceptionMapper<Exception> {
                     .type("text/plain")
                     .build();
         } else if (exception instanceof LoginNotPossible) {
-            return Response.status(Response.Status.BAD_REQUEST)
+            return Response.status(Response.Status.CONFLICT)
                     .entity("Per poter effettuare nuovamente il login eseguire prima il logout")
                     .type("text/plain")
                     .build();

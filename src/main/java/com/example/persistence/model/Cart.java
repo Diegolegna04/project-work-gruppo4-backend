@@ -6,6 +6,7 @@ import io.quarkus.mongodb.panache.common.MongoEntity;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,12 +19,12 @@ public class Cart extends PanacheMongoEntity {
     @BsonProperty("products")
     public List<Order.ProductItem> products = new ArrayList<>();
     @BsonProperty("price")
-    public float price;
+    public BigDecimal price = BigDecimal.ZERO;
 
     public Cart() {
 
     }
-    public Cart(ObjectId id, Integer idUser, List<Order.ProductItem> products, float price) {
+    public Cart(ObjectId id, Integer idUser, List<Order.ProductItem> products, BigDecimal price) {
         this.id = id;
         this.idUser = idUser;
         this.products = products;
@@ -55,11 +56,11 @@ public class Cart extends PanacheMongoEntity {
         this.products = products;
     }
 
-    public float getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(float price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 }

@@ -1,58 +1,33 @@
-package com.example.persistence.model;
-
-import jakarta.persistence.*;
-import org.bson.types.ObjectId;
+package com.example.rest.model;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-@Entity
-@Table(name = "product")
-public class Product {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Integer id;
-    @Column(name = "name", length = 100, nullable = false)
+public class ProductRequest {
     private String name;
-    @Column(name = "description", nullable = false)
     private String description;
-    @Column(name = "price", nullable = false)
     private BigDecimal price;
-    @Column(name = "quantity", nullable = false)
     private Integer quantity;
-    @Column(name = "ingredient_list_id", length = 50)
-    private String ingredientListId;
-    @Column(name = "category", length = 100, nullable = false)
+    private List<String> ingredientList;
     private String category;
-    @Column(name = "image", length = 200)
     private String image;
-    @Column(name = "show_to_user", nullable = false)
     private Boolean showToUser = true;
 
 
-    public Product() {
+    public ProductRequest() {
 
     }
-    public Product(Integer id, String name, String description, BigDecimal price, Integer quantity, String ingredientListId, String category, String image, Boolean showToUser) {
-        this.id = id;
+    public ProductRequest(String name, String description, BigDecimal price, Integer quantity, List<String> ingredientList, String category, String image, Boolean showToUser) {
         this.name = name;
         this.description = description;
         this.price = price;
         this.quantity = quantity;
-        this.ingredientListId = ingredientListId;
+        this.ingredientList = ingredientList;
         this.category = category;
         this.image = image;
         this.showToUser = showToUser;
     }
 
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
 
     public String getName() {
         return name;
@@ -86,12 +61,12 @@ public class Product {
         this.quantity = quantity;
     }
 
-    public String getIngredientListId() {
-        return ingredientListId;
+    public List<String> getIngredientList() {
+        return ingredientList;
     }
 
-    public void setIngredientListId(String ingredientListId) {
-        this.ingredientListId = ingredientListId;
+    public void setIngredientList(List<String> ingredientList) {
+        this.ingredientList = ingredientList;
     }
 
     public String getCategory() {

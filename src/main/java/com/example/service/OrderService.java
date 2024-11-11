@@ -8,6 +8,7 @@ import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -74,15 +75,20 @@ public class OrderService implements PanacheMongoRepository<Order> {
         return email != null && email.matches(emailRegex);
     }
 
-    private Double calculateOrderPrice(List<Order.ProductItem> products) {
-        double total = 0.0;
+    private BigDecimal calculateOrderPrice(List<Order.ProductItem> products) {
+        BigDecimal total = BigDecimal.ZERO;
         for (Order.ProductItem orderProduct : products) {
             int quantity = orderProduct.quantity;
             Product product = productRepository.findById(Long.valueOf(orderProduct.idProduct));
             if (product == null) {
                 throw new IllegalArgumentException("Prodotto con ID " + orderProduct.idProduct + " non trovato");
             }
-            total += (product.getPrice() * quantity);
+            BigDecimal productPrice = product.getPrice();
+            BigDecimal quantityBD = BigDecimal.valueOf(quantity);
+            BigDecimal productTotal = productPrice.multiply(quantityBD); // Usa multiply per la moltiplicazione
+
+            // Aggiungi al totale
+            total = total.add(productTotal);
         }
         return total;
     }

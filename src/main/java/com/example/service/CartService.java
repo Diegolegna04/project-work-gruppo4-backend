@@ -21,7 +21,6 @@ public class CartService implements PanacheMongoRepository<Cart> {
     public void createNewEmptyCart(Integer idUtente) {
         Cart cart = new Cart();
         cart.idUser = idUtente;
-        cart.price = 0;
         persist(cart);
     }
 
