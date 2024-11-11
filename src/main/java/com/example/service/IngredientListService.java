@@ -32,12 +32,18 @@ public class IngredientListService implements PanacheMongoRepository<IngredientL
     }
 
     @Transactional
-    public ObjectId findIngredientList(List<String> ingredientList){
+    public ObjectId findIngredientList(List<String> ingredientList) {
         IngredientList foundIngredientList = find("ingredients", ingredientList).firstResult();
-        if (foundIngredientList != null){
+        if (foundIngredientList != null) {
             return foundIngredientList.getId();
-        }else {
+        } else {
             return null;
         }
+    }
+
+    @Transactional
+    public void removeIngredientList(ObjectId ingredientListId) {
+        IngredientList foundIngredientList = findById(ingredientListId);
+        foundIngredientList.delete();
     }
 }

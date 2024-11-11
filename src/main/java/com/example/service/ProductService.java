@@ -76,7 +76,15 @@ public class ProductService implements PanacheRepository<Product> {
                     .entity("Prodotto non trovato")
                     .build();
         }
+        String foundProductIngredientListId = foundProduct.getIngredientListId();
         repository.deleteById(Long.valueOf(foundProduct.getId()));
+
+        // If the deleted product is the only one that have a certain list of ingredients, delete this list too
+        Product productWithSameIngredientListId = repository.find("ingredientListId", foundProductIngredientListId).firstResult();
+        if (productWithSameIngredientListId == null) {
+            ingredientListService.removeIngredientList(new ObjectId(foundProductIngredientListId));
+        }
+
         return Response.ok()
                 .entity("Prodotto eliminato")
                 .build();
