@@ -2,6 +2,7 @@ package com.example.persistence;
 
 import com.example.persistence.model.Sessione;
 import com.example.persistence.model.Utente;
+import com.example.rest.model.UtenteResponse;
 import com.example.service.HashCalculator;
 import com.example.service.SessionService;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
@@ -31,6 +32,11 @@ public class AuthRepository implements PanacheRepository<Utente> {
         return find("id", sessione.getIdUtente()).firstResult();
     }
 
+    public UtenteResponse getUtenteAccountBySessionCookie(String sessionCookie) {
+        Utente utente = getUtenteBySessionCookie(sessionCookie);
+        return new UtenteResponse(utente.getId(), utente.getNome(), utente.getCognome(), utente.getEmail(), utente.getTelefono());
+    }
+
     //Save the token for the verification method
     public void saveToken(Integer idUtente, String token) {
         // Find the user where to save the verification token
@@ -57,4 +63,6 @@ public class AuthRepository implements PanacheRepository<Utente> {
     public String hashPassword(String password) {
         return hashCalculator.hashPassword(password);
     }
+
+
 }

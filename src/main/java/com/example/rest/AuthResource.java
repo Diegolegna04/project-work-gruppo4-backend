@@ -1,7 +1,7 @@
 package com.example.rest;
 
-import com.example.persistence.AuthRepository;
 import com.example.persistence.model.Utente;
+import com.example.rest.model.UtenteResponse;
 import com.example.service.exception.UserNotRegisteredException;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
@@ -64,11 +64,27 @@ public class AuthResource {
         }
     }
 
+    //GET YOUR ROLE
+    @GET
+    @Path("/role")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getRole(@CookieParam("SESSION_COOKIE") String sessionCookie) {
+        return service.getRole(sessionCookie);
+    }
+
     // GET YOUR PROFILE (used for customizing the dashboard with user info)
     @GET
     @Path("/account")
     @Produces(MediaType.APPLICATION_JSON)
-    public Utente getUtente(@CookieParam("SESSION_COOKIE") String sessionCookie) {
+    public UtenteResponse getUtente(@CookieParam("SESSION_COOKIE") String sessionCookie) {
         return service.getUtenteBySessionCookie(sessionCookie);
+    }
+
+    @PUT
+    @Path("/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateUtente (@CookieParam("SESSION_COOKIE") String sessionCookie, UtenteResponse u) {
+        return service.updateUtente(sessionCookie, u);
     }
 }
