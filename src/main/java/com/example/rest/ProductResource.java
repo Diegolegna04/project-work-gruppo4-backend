@@ -69,6 +69,20 @@ public class ProductResource {
         return Response.status(Response.Status.UNAUTHORIZED).entity("Devi essere un admin per poter inserire un prodotto nel database").build();
     }
 
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response modifyProduct(@CookieParam("SESSION_COOKIE") String sessionCookie, Product product){
+        if (sessionService.getUserRoleBySessionCookie(sessionCookie) == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).entity("Non è stata trovata nessuna sessione per questo utente").build();
+        }
+        if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.Admin)) {
+            return service.modifyProduct(product);
+        }
+        return Response.status(Response.Status.UNAUTHORIZED).entity("Devi essere un admin per poter inserire un prodotto nel database").build();
+    }
+
+
     @DELETE
     @Consumes(MediaType.APPLICATION_JSON)
     public Response deleteProduct(@CookieParam("SESSION_COOKIE") String sessionCookie,Product product){

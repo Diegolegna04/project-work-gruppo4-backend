@@ -69,6 +69,34 @@ public class ProductService implements PanacheRepository<Product> {
     }
 
     @Transactional
+    public Response modifyProduct(Product product){
+        // Found the product
+        Product foundProduct = findById(Long.valueOf(product.getId()));
+
+        if (foundProduct == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Prodotto non trovato")
+                    .build();
+        }
+
+        // Update the product
+        foundProduct.setName(product.getName());
+        foundProduct.setDescription(product.getDescription());
+        foundProduct.setPrice(product.getPrice());
+        foundProduct.setQuantity(product.getQuantity());
+        foundProduct.setIngredientListId(product.getIngredientListId());
+        foundProduct.setCategory(product.getCategory());
+        foundProduct.setImage(product.getImage());
+        foundProduct.setShowToUser(product.getShowToUser());
+
+        persist(foundProduct);
+
+        return Response.ok()
+                .entity("Prodotto aggiornato")
+                .build();
+    }
+
+    @Transactional
     public Response removeProduct(Product product) {
         Product foundProduct = repository.findById(Long.valueOf(product.getId()));
         if (foundProduct == null) {
