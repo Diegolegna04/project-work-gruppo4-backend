@@ -27,15 +27,13 @@ public class ProductResource {
     }
 
 
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public List<Product> getProducts(@CookieParam("SESSION_COOKIE") String sessionCookie) {
-        // Get a list of all the products in storage (only for admins)
         if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.Admin)) {
             return repository.getAllProducts();
-        }
-        // Get a list of all the products visible (for users)
-        else if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.User)) {
+        } else if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.User)) {
             return repository.getAllProductsForUsers();
         }
         return List.of();
@@ -46,14 +44,13 @@ public class ProductResource {
 
     // JSON FOR SIMULATING THE POST
 //    {
-//        "name": "Macaron fragola",
-//        "description": "Un dolce tipico francese aromatizzato con il deciso gusto delle fragole di bosco",
-//        "price": 2.5,
-//        "ingredientList": ["Uovo", "Zucchero", "Fragola", "Latte", "Farina"],
-//        "quantity": 20,
-//        "category": "Biscotti",
-//        "image": "/path_to_image",
-//        "showToUser": true
+//            "name":"Millefoglie",
+//            "description":"Una torta multistrati con crema alla vaniglia e scaglie di cioccolato",
+//            "price":29.99,
+//            "quantity":11,
+//            "category":"Torta",
+//            "image":"/path_to_image",
+//            "show_to_user":true
 //    }
     @POST
     @Consumes(MediaType.APPLICATION_JSON)

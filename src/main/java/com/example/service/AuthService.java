@@ -4,6 +4,7 @@ import com.example.persistence.AuthRepository;
 import com.example.persistence.model.Ruolo;
 import com.example.persistence.model.Sessione;
 import com.example.persistence.model.Utente;
+import com.example.rest.model.UtenteResponse;
 import com.example.service.exception.UserNotRegisteredException;
 import com.example.rest.model.UtenteLoginRequest;
 import com.example.rest.model.UtenteRegisterRequest;
@@ -152,7 +153,7 @@ public class AuthService implements PanacheRepository<Utente> {
         // Persist it
         sessionService.persist(newSessione);
         // Return Response and build the cookie
-        return Response.ok("Sessione creata correttamente").
+        return Response.ok("{\"status\": \"success\"}").
                 cookie(new NewCookie.Builder("SESSION_COOKIE")
                         .value(newSessione.getSessionCookie())
                         .path("/")
@@ -211,7 +212,36 @@ public class AuthService implements PanacheRepository<Utente> {
     }
 
     // Get user by the session cookie value
-    public Utente getUtenteBySessionCookie(String sessionCookie){
-        return repository.getUtenteBySessionCookie(sessionCookie);
+    public UtenteResponse getUtenteBySessionCookie(String sessionCookie){
+        return repository.getUtenteAccountBySessionCookie(sessionCookie);
+    }
+
+    public Response updateUtente(String sessionCookie, UtenteResponse u) {
+        Utente utente = repository.getUtenteBySessionCookie(sessionCookie);
+        if (utente == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Utente non trovato").build();
+        }
+        if (u.getNome() != null && !u.getNome().isEmpty()) {
+            utente.setNome(u.getNome());
+        }
+        if (u.getCognome() != null && !u.getCognome().isEmpty()) {
+            utente.setCognome(u.getCognome());
+        }
+        if (u.getEmail() != null && !u.getEmail().isEmpty()) {
+            utente.setEmail(u.getEmail());
+        }
+        if (u.getTelefono() != null && !u.getTelefono().isEmpty()) {
+            utente.setTelefono(u.getTelefono());
+        }
+        repository.persist(utente);
+        return Response.ok("Utente aggiornato con successo").build();
+    }
+
+    public String getRole(String sessionCookie) {
+        Utente utente = repository.getUtenteBySessionCookie(sessionCookie);
+        if (utente == null) {
+            return "Utente non trovato";
+        }
+        return utente.getRuolo().toString();
     }
 }
