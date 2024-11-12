@@ -9,6 +9,11 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import org.bson.types.ObjectId;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.List;
 
 
@@ -32,12 +37,15 @@ public class ProductService implements PanacheRepository<Product> {
     @Transactional
     public Response addProduct(ProductRequest productReq, ObjectId ingredientListId) {
         // The product already exists?
-        boolean exists = repository.productExists(
-                productReq.getName(),
-                productReq.getPrice(),
-                ingredientListId.toHexString(),
-                productReq.getCategory()
-        );
+        boolean exists = false;
+        if (ingredientListId != null) {
+            exists = repository.productExists(
+                    productReq.getName(),
+                    productReq.getPrice(),
+                    ingredientListId.toHexString(),
+                    productReq.getCategory()
+            );
+        }
         // If the product already exists Admin can't add it
         if (exists) {
             return Response.status(Response.Status.CONFLICT)
@@ -51,13 +59,29 @@ public class ProductService implements PanacheRepository<Product> {
         newProduct.setDescription(productReq.getDescription());
         newProduct.setPrice(productReq.getPrice());
         newProduct.setQuantity(productReq.getQuantity());
-        newProduct.setIngredientListId(ingredientListId.toHexString());
+        if (ingredientListId != null) {
+            newProduct.setIngredientListId(ingredientListId.toHexString());
+        }
         newProduct.setCategory(productReq.getCategory());
-        newProduct.setImage(productReq.getImage());
         newProduct.setShowToUser(productReq.getShowToUser());
 
+        // Save image
+        String base64Image = productReq.getImage();
+        if (base64Image != null && !base64Image.isEmpty()) {
+            String fileName = productReq.getName().replaceAll("\\s+", "_") + ".png";
+
+            try {
+                saveImage(base64Image, fileName);
+                newProduct.setImage("C:/MY SCUOLA/PW4/project-work-gruppo4-frontend/src/img/" + fileName);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity("Errore durante il salvataggio dell'immagine: " + e.getMessage())
+                        .build();
+            }
+        }
+
         try {
-            System.out.println("Inserendo il prodotto ... ");
             persist(newProduct);
             return Response.ok("Il prodotto è stato aggiunto correttamente").build();
         } catch (Exception e) {
@@ -65,6 +89,19 @@ public class ProductService implements PanacheRepository<Product> {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(e.getMessage())
                     .build();
+        }
+    }
+
+    private void saveImage(String base64Image, String fileName) throws IOException {
+        String[] parts = base64Image.split(",");
+        String imageData = parts[1];
+
+        byte[] imageBytes = Base64.getDecoder().decode(imageData);
+
+        // Save the image
+        Path path = Paths.get("C:/MY SCUOLA/PW4/project-work-gruppo4-frontend/public/prodotti/" + fileName);
+        try (FileOutputStream fos = new FileOutputStream(path.toFile())) {
+            fos.write(imageBytes);
         }
     }
 

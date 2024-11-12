@@ -15,6 +15,9 @@ public class IngredientListService implements PanacheMongoRepository<IngredientL
 
     @Transactional
     public ObjectId createIngredientList(List<String> ingredientList) {
+        if (ingredientList == null || ingredientList.isEmpty()) {
+            return null;
+        }
         // Sort the ingredient list
         List<String> sortedIngredientList = new ArrayList<>(ingredientList);
         Collections.sort(sortedIngredientList);
