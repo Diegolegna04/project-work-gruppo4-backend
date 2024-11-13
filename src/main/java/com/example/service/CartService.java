@@ -6,6 +6,9 @@ import com.example.persistence.model.Order;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
+import org.bson.types.ObjectId;
+
+import java.math.BigDecimal;
 
 @ApplicationScoped
 public class CartService implements PanacheMongoRepository<Cart> {
@@ -22,6 +25,18 @@ public class CartService implements PanacheMongoRepository<Cart> {
         Cart cart = new Cart();
         cart.idUser = idUtente;
         persist(cart);
+    }
+
+    // Clear the cart after making an order
+    public void clearCart(ObjectId cartId){
+        Cart cart = Cart.findById(cartId);
+
+        if (cart != null) {
+            cart.products.clear();
+            cart.price = BigDecimal.ZERO;
+
+            cart.update();
+        }
     }
 
     // Add a productItem (product_id and quantity) to the cart

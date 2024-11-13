@@ -19,6 +19,9 @@ public class CartResource {
         this.authRepository = authRepository;
     }
 
+    // TODO: non devi poter inserire una quantità negativa così da abbassare il prezzo
+    // TODO: se quantity di un prodotto = 0 elimina il prodotto dalla lista products
+
     @POST
     @Path("/add")
     @Consumes(MediaType.APPLICATION_JSON)

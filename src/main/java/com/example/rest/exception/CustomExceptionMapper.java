@@ -49,6 +49,16 @@ public class CustomExceptionMapper implements ExceptionMapper<Exception> {
                     .entity("Per poter effettuare nuovamente il login eseguire prima il logout")
                     .type("text/plain")
                     .build();
+        } else if (exception instanceof ProductNotAvailable) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity("Il prodotto non è disponibile")
+                    .type("text/plain")
+                    .build();
+        } else if (exception instanceof QuantityNotAvailable) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity("Quantità non disponibile")
+                    .type("text/plain")
+                    .build();
         }
 
         // Default Response

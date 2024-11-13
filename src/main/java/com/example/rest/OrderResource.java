@@ -3,13 +3,19 @@ package com.example.rest;
 import com.example.persistence.AuthRepository;
 import com.example.persistence.model.Order;
 import com.example.persistence.model.Ruolo;
+import com.example.persistence.model.Sessione;
 import com.example.persistence.model.Utente;
-import com.example.rest.model.OrderRequest;
+import com.example.rest.model.OrderDateRequest;
 import com.example.service.OrderService;
 import com.example.service.SessionService;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
+import java.sql.Time;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 
@@ -26,12 +32,17 @@ public class OrderResource {
         this.authRepository = authRepository;
     }
 
+
+//    {
+//        "pickupDateTime": "2024-11-10T13:00:00"
+//    }
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response makeAOrder(@CookieParam("SESSION_COOKIE") String sessionCookie, OrderRequest order) {
-        String contact = sessionService.getUserContactBySessionCookie(sessionCookie);
-        return service.makeAOrder(contact, order);
+    public Response makeAOrder(@CookieParam("SESSION_COOKIE") String sessionCookie, OrderDateRequest pickupDateTime) {
+        Sessione userSession = sessionService.findSessioneByCookie(sessionCookie);
+        Utente utente = authRepository.findById(Long.valueOf(userSession.getIdUtente()));
+        return service.makeAOrder(utente, pickupDateTime);
     }
 
     @GET
