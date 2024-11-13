@@ -8,8 +8,11 @@ import com.example.persistence.model.Utente;
 import com.example.rest.model.OrderDateRequest;
 import com.example.service.exception.ProductNotAvailable;
 import com.example.service.exception.QuantityNotAvailable;
+import io.quarkus.mailer.Mail;
+import io.quarkus.mailer.Mailer;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import java.math.BigDecimal;
@@ -28,10 +31,13 @@ public class OrderService implements PanacheMongoRepository<Order> {
 
     private final ProductRepository productRepository;
     private final CartService cartService;
+    private final Mailer mailer;
 
-    public OrderService(ProductRepository productRepository, CartService cartService) throws QuantityNotAvailable, IllegalArgumentException {
+    @Inject
+    public OrderService(ProductRepository productRepository, CartService cartService, Mailer mailer) throws QuantityNotAvailable, IllegalArgumentException {
         this.productRepository = productRepository;
         this.cartService = cartService;
+        this.mailer = mailer;
     }
 
     @Transactional
@@ -58,6 +64,11 @@ public class OrderService implements PanacheMongoRepository<Order> {
             persist(newOrder);
             modifyProductQuantity(userCart.products);
             cartService.clearCart(userCart.id);
+
+            // Send an "order completed successfully" message
+            mailer.send(Mail.withHtml(user.getEmail(), "Ordine effettuato", "Il tuo ordine è andato a buon fine!"));
+            mailer.send(Mail.withHtml("fabiogiannico3@gmail.com", "Ordine effettuato", "È stato effettuato un nuovo ordine!"));
+
             return Response.status(Response.Status.CREATED)
                     .entity("Ordine creato con successo")
                     .build();
@@ -93,7 +104,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
     private OrderDateRequest handleOrderDateRequest(OrderDateRequest orderDateRequest) throws IllegalArgumentException{
         LocalDateTime requestedDateTime = orderDateRequest.getPickupDateTime();
 
-        // Check if the pickup day is Monday (bakery is closed)
+        // Check if the pickup day is Monday
         if (requestedDateTime.getDayOfWeek() == DayOfWeek.MONDAY) {
             throw new IllegalArgumentException("La pasticceria è chiusa il lunedì.");
         }
@@ -145,6 +156,11 @@ public class OrderService implements PanacheMongoRepository<Order> {
         // Check if the time is within opening hours
         if (requestedDateTime.toLocalTime().isBefore(openingTime) || requestedDateTime.toLocalTime().isAfter(closingTime)) {
             throw new IllegalArgumentException("L'orario richiesto è fuori dagli orari di apertura.");
+        }
+
+        Order orderWithSameTime = find("pickup_date_time.pickupDateTime", requestedDateTime).firstResult();
+        if (orderWithSameTime != null){
+            throw new IllegalArgumentException("Questo orario di ritiro è già occupato da un altro utente");
         }
 
         // Return the adjusted OrderDateRequest
