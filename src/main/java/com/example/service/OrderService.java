@@ -1,10 +1,7 @@
 package com.example.service;
 
 import com.example.persistence.ProductRepository;
-import com.example.persistence.model.Cart;
-import com.example.persistence.model.Order;
-import com.example.persistence.model.Product;
-import com.example.persistence.model.Utente;
+import com.example.persistence.model.*;
 import com.example.rest.model.OrderDateRequest;
 import com.example.service.exception.ProductNotAvailable;
 import com.example.service.exception.QuantityNotAvailable;
@@ -15,6 +12,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
+import org.bson.types.ObjectId;
+
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
@@ -213,5 +212,27 @@ public class OrderService implements PanacheMongoRepository<Order> {
             total = total.add(productTotal);
         }
         return total;
+    }
+
+    public Response acceptAnOrder(AcceptOrder acceptOrder){
+        Order foundOrder = findById(acceptOrder.orderId);
+
+        if (foundOrder == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        String responseEntity;
+        String orderStatus;
+        if (acceptOrder.accepted){
+            orderStatus = "Accepted";
+            responseEntity = "Order accepted";
+        }else {
+            orderStatus = "Rejected";
+            responseEntity = "Order rejected";
+        }
+
+        foundOrder.status = orderStatus;
+        update(foundOrder);
+        return Response.ok().entity(responseEntity).build();
     }
 }

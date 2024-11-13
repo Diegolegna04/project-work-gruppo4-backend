@@ -1,16 +1,14 @@
 package com.example.rest;
 
 import com.example.persistence.AuthRepository;
-import com.example.persistence.model.Order;
-import com.example.persistence.model.Ruolo;
-import com.example.persistence.model.Sessione;
-import com.example.persistence.model.Utente;
+import com.example.persistence.model.*;
 import com.example.rest.model.OrderDateRequest;
 import com.example.service.OrderService;
 import com.example.service.SessionService;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
 import java.util.List;
 
 
@@ -79,6 +77,19 @@ public class OrderResource {
             List<Order> orders = service.getAllOrders();
             return Response.ok(orders)
                     .build();
+        } else {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+    }
+
+    // ACCEPT / REJECT AN ORDER METHOD (true = accepted)
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response acceptAnOrder(@CookieParam("SESSION_COOKIE") String sessionCookie, AcceptOrder acceptOrder) {
+        // Check if the user is an Admin
+        if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.Admin)) {
+            return service.acceptAnOrder(acceptOrder);
         } else {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
