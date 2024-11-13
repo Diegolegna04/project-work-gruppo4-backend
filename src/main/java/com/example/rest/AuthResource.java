@@ -24,7 +24,14 @@ public class AuthResource {
         this.service = service;
     }
 
-
+    // JSON FOR SIMULATING THE POST
+//    {
+//        "nome": "Fabio",
+//        "cognome": "Giannico",
+//        "email": "fabio.giannico@gmail.com",
+//        "password": "FabioGiannico",
+//        "telefono": ""
+//    }
     // REGISTER METHOD
     @POST
     @Path("/register")
@@ -42,6 +49,11 @@ public class AuthResource {
         return service.verifyEmail(token);
     }
 
+    // JSON FOR SIMULATING THE POST
+//    {
+//        "email": "fabio.giannico@gmail.com",
+//        "password": "FabioGiannico"
+//    }
     // LOGIN METHOD
     @POST
     @Path("/login")

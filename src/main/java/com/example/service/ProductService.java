@@ -53,7 +53,7 @@ public class ProductService implements PanacheRepository<Product> {
                     .type("text/plain")
                     .build();
         }
-
+        // Create a new product to persist
         Product newProduct = new Product();
         newProduct.setName(productReq.getName());
         newProduct.setDescription(productReq.getDescription());
@@ -66,13 +66,16 @@ public class ProductService implements PanacheRepository<Product> {
         newProduct.setShowToUser(productReq.getShowToUser());
 
         // Save image
+        // Get image base64-encoded from frontend
         String base64Image = productReq.getImage();
         if (base64Image != null && !base64Image.isEmpty()) {
+            // Replace spaces with underscore
             String fileName = productReq.getName().replaceAll("\\s+", "_") + ".png";
 
             try {
                 saveImage(base64Image, fileName);
-                newProduct.setImage("C:/MY SCUOLA/PW4/project-work-gruppo4-frontend/src/img/" + fileName);
+                // Set the image path to save in DB
+                newProduct.setImage("C:/MY SCUOLA/PW4/project-work-gruppo4-frontend/public/prodotti/" + fileName);
             } catch (IOException e) {
                 e.printStackTrace();
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -93,12 +96,13 @@ public class ProductService implements PanacheRepository<Product> {
     }
 
     private void saveImage(String base64Image, String fileName) throws IOException {
+        // Split the string and get the encoded part
         String[] parts = base64Image.split(",");
         String imageData = parts[1];
-
+        // Decode the image into a byte array
         byte[] imageBytes = Base64.getDecoder().decode(imageData);
 
-        // Save the image
+        // Save the image in this path
         Path path = Paths.get("C:/MY SCUOLA/PW4/project-work-gruppo4-frontend/public/prodotti/" + fileName);
         try (FileOutputStream fos = new FileOutputStream(path.toFile())) {
             fos.write(imageBytes);
@@ -141,6 +145,7 @@ public class ProductService implements PanacheRepository<Product> {
                     .entity("Prodotto non trovato")
                     .build();
         }
+        // Before deleting the product get its ingredientListId
         String foundProductIngredientListId = foundProduct.getIngredientListId();
         repository.deleteById(Long.valueOf(foundProduct.getId()));
 

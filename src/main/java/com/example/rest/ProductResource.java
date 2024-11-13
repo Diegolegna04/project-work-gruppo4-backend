@@ -27,7 +27,7 @@ public class ProductResource {
     }
 
 
-
+    // GET ALL VISIBLE PRODUCTS METHOD
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public List<Product> getProducts(@CookieParam("SESSION_COOKIE") String sessionCookie) {
@@ -40,57 +40,69 @@ public class ProductResource {
     }
 
 
-    // ADMIN METHODS
+    // ##### ADMIN METHODS #####
 
     // JSON FOR SIMULATING THE POST
 //    {
 //            "name":"Millefoglie",
 //            "description":"Una torta multistrati con crema alla vaniglia e scaglie di cioccolato",
 //            "price":29.99,
+//            "ingredientList": ["Uovo", "Zucchero", "Panna", "Latte", "Farina"],
 //            "quantity":11,
 //            "category":"Torta",
 //            "image":"/path_to_image",
 //            "show_to_user":true
 //    }
+
+    // ADD A PRODUCT METHOD
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response addProduct(@CookieParam("SESSION_COOKIE") String sessionCookie, ProductRequest product) {
+        // Check if the user is logged in
         if (sessionService.getUserRoleBySessionCookie(sessionCookie) == null) {
-            return Response.status(Response.Status.UNAUTHORIZED).entity("Non è stata trovata nessuna sessione per questo utente").build();
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("Non è stata trovata nessuna sessione per questo utente")
+                    .build();
         }
+        // Check if the user is Admin
         if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.Admin)) {
+            // First add the ingredient list (and return its id)
             ObjectId ingredientListId = service.addIngredientList(product.getIngredientList());
+            // Then add the product
             return service.addProduct(product, ingredientListId);
         }
         return Response.status(Response.Status.UNAUTHORIZED).entity("Devi essere un admin per poter inserire un prodotto nel database").build();
     }
 
+    // MODIFY A PRODUCT METHOD
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response modifyProduct(@CookieParam("SESSION_COOKIE") String sessionCookie, Product product){
+        // Check if the user is logged in
         if (sessionService.getUserRoleBySessionCookie(sessionCookie) == null) {
             return Response.status(Response.Status.UNAUTHORIZED).entity("Non è stata trovata nessuna sessione per questo utente").build();
         }
+        // Check if the user is Admin
         if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.Admin)) {
             return service.modifyProduct(product);
         }
         return Response.status(Response.Status.UNAUTHORIZED).entity("Devi essere un admin per poter inserire un prodotto nel database").build();
     }
 
-
+    // DELETE A PRODUCT METHOD
     @DELETE
     @Consumes(MediaType.APPLICATION_JSON)
     public Response deleteProduct(@CookieParam("SESSION_COOKIE") String sessionCookie,Product product){
+        // Check if the user is logged in
         if (sessionService.getUserRoleBySessionCookie(sessionCookie) == null) {
             return Response.status(Response.Status.UNAUTHORIZED).entity("Non è stata trovata nessuna sessione per questo utente").build();
         }
+        // Check if the user is Admin
         if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.Admin)) {
             return service.removeProduct(product);
         }
         return Response.status(Response.Status.UNAUTHORIZED).entity("Devi essere un admin per poter inserire un prodotto nel database").build();
     }
-
-
 }
