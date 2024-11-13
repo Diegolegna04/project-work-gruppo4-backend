@@ -1,20 +1,20 @@
 package com.example.rest.model;
 
 
-import java.sql.Time;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 
-public class OrderDateRequest {
+public class OrderRequest {
     public LocalDateTime pickupDateTime;
+    public String notes;
 
 
-    public OrderDateRequest() {
+    public OrderRequest() {
 
     }
-    public OrderDateRequest(LocalDateTime pickupDateTime) {
+    public OrderRequest(LocalDateTime pickupDateTime, String notes) {
         this.pickupDateTime = pickupDateTime;
+        this.notes = notes;
     }
 
     public LocalDateTime getPickupDateTime() {

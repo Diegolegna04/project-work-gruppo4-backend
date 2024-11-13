@@ -2,7 +2,7 @@ package com.example.rest;
 
 import com.example.persistence.AuthRepository;
 import com.example.persistence.model.*;
-import com.example.rest.model.OrderDateRequest;
+import com.example.rest.model.OrderRequest;
 import com.example.service.OrderService;
 import com.example.service.SessionService;
 import jakarta.ws.rs.*;
@@ -35,7 +35,7 @@ public class OrderResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response makeAnOrder(@CookieParam("SESSION_COOKIE") String sessionCookie, OrderDateRequest pickupDateTime) {
+    public Response makeAnOrder(@CookieParam("SESSION_COOKIE") String sessionCookie, OrderRequest pickupDateTime) {
         Sessione userSession = sessionService.findSessioneByCookie(sessionCookie);
         Utente utente = authRepository.findById(Long.valueOf(userSession.getIdUtente()));
         return service.makeAnOrder(utente, pickupDateTime);
@@ -81,6 +81,13 @@ public class OrderResource {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
     }
+
+
+    // JSON FOR SIMULATING THE PUT
+//    {
+//        "pickupDateTime": "2024-11-14T11:20:00",
+//        "notes": "È un regalo, se potreste impacchettarlo come tale con un fiocco bianco. Grazie"
+//    }
 
     // ACCEPT / REJECT AN ORDER METHOD (true = accepted)
     @PUT

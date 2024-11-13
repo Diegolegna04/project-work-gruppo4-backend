@@ -21,6 +21,7 @@ public class Cart extends PanacheMongoEntity {
     @BsonProperty("price")
     public BigDecimal price = BigDecimal.ZERO;
 
+
     public Cart() {
 
     }

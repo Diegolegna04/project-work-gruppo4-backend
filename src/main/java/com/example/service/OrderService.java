@@ -2,7 +2,7 @@ package com.example.service;
 
 import com.example.persistence.ProductRepository;
 import com.example.persistence.model.*;
-import com.example.rest.model.OrderDateRequest;
+import com.example.rest.model.OrderRequest;
 import com.example.service.exception.ProductNotAvailable;
 import com.example.service.exception.QuantityNotAvailable;
 import io.quarkus.mailer.Mail;
@@ -12,13 +12,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
-import org.bson.types.ObjectId;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
@@ -40,7 +39,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
     }
 
     @Transactional
-    public Response makeAnOrder(Utente user, OrderDateRequest pickupDateTime) {
+    public Response makeAnOrder(Utente user, OrderRequest orderRequest) {
         Cart userCart = cartService.find("idUser", user.getId()).firstResult();
         if (userCart.products == null || userCart.products.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -58,15 +57,17 @@ public class OrderService implements PanacheMongoRepository<Order> {
         newOrder.status = "Pending";
         newOrder.price = userCart.price;
         newOrder.orderDate = new Date();
-        newOrder.pickupDateTime = handleOrderDateRequest(pickupDateTime) ;
+        newOrder.pickupDateTime = handleOrderDateRequest(orderRequest) ;
+        newOrder.notes = orderRequest.notes;
         try {
             persist(newOrder);
             modifyProductQuantity(userCart.products);
             cartService.clearCart(userCart.id);
 
-            // Send an "order completed successfully" message
-            mailer.send(Mail.withHtml(user.getEmail(), "Ordine effettuato", "Il tuo ordine è andato a buon fine!"));
-            mailer.send(Mail.withHtml("fabiogiannico3@gmail.com", "Ordine effettuato", "È stato effettuato un nuovo ordine!"));
+            // Send an "order completed" email
+            String emailOrderMessage = buildEmailOrderMessage(userCart, orderRequest);
+            mailer.send(Mail.withHtml(user.getEmail(), "Ordine effettuato", "Il tuo ordine è andato a buon fine!" + emailOrderMessage));
+            mailer.send(Mail.withHtml("fabiogiannico3@gmail.com", "Nuovo ordine", "È stato effettuato un nuovo ordine!" + emailOrderMessage));
 
             return Response.status(Response.Status.CREATED)
                     .entity("Ordine creato con successo")
@@ -82,6 +83,29 @@ public class OrderService implements PanacheMongoRepository<Order> {
                     .entity("Errore durante la creazione dell'ordine.")
                     .build();
         }
+    }
+
+    @Transactional
+    public Response acceptAnOrder(AcceptOrder acceptOrder){
+        Order foundOrder = findById(acceptOrder.orderId);
+
+        if (foundOrder == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        String responseEntity;
+        String orderStatus;
+        if (acceptOrder.accepted){
+            orderStatus = "Accepted";
+            responseEntity = "Order accepted";
+        }else {
+            orderStatus = "Rejected";
+            responseEntity = "Order rejected";
+        }
+
+        foundOrder.status = orderStatus;
+        update(foundOrder);
+        return Response.ok().entity(responseEntity).build();
     }
 
     public List<Order> getAllOrders(){
@@ -100,8 +124,8 @@ public class OrderService implements PanacheMongoRepository<Order> {
 
 
 
-    private OrderDateRequest handleOrderDateRequest(OrderDateRequest orderDateRequest) throws IllegalArgumentException{
-        LocalDateTime requestedDateTime = orderDateRequest.getPickupDateTime();
+    private OrderRequest handleOrderDateRequest(OrderRequest orderRequest) throws IllegalArgumentException{
+        LocalDateTime requestedDateTime = orderRequest.getPickupDateTime();
 
         // Check if the pickup day is Monday
         if (requestedDateTime.getDayOfWeek() == DayOfWeek.MONDAY) {
@@ -163,11 +187,10 @@ public class OrderService implements PanacheMongoRepository<Order> {
         }
 
         // Return the adjusted OrderDateRequest
-        OrderDateRequest adjustedRequest = new OrderDateRequest();
+        OrderRequest adjustedRequest = new OrderRequest();
         adjustedRequest.setPickupDateTime(requestedDateTime);
         return adjustedRequest;
     }
-
 
     private void modifyProductQuantity(List<Order.ProductItem> products) throws QuantityNotAvailable, ProductNotAvailable {
         for (Order.ProductItem item : products){
@@ -183,6 +206,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
             }
         }
     }
+
     private Integer calculateProductNewQuantity(Integer oldQuantity, Integer productQuantity) throws QuantityNotAvailable {
         if (oldQuantity < productQuantity){
             throw new QuantityNotAvailable();
@@ -195,44 +219,23 @@ public class OrderService implements PanacheMongoRepository<Order> {
         return email != null && email.matches(emailRegex);
     }
 
-    // TODO: remove method
-    private BigDecimal calculateOrderPrice(List<Order.ProductItem> products) {
-        BigDecimal total = BigDecimal.ZERO;
-        for (Order.ProductItem orderProduct : products) {
-            int quantity = orderProduct.quantity;
-            Product product = productRepository.findById(Long.valueOf(orderProduct.idProduct));
-            if (product == null) {
-                throw new IllegalArgumentException("Prodotto con ID " + orderProduct.idProduct + " non trovato");
+    private String buildEmailOrderMessage(Cart cart, OrderRequest orderRequest){
+        StringBuilder productDetails = new StringBuilder();
+        for (Order.ProductItem item : cart.products) {
+            Product product = productRepository.findById(Long.valueOf(item.idProduct));
+            if (product != null) {
+                productDetails.append(product.getName())
+                        .append(" (quantità: ")
+                        .append(item.quantity)
+                        .append(")");
             }
-            BigDecimal productPrice = product.getPrice();
-            BigDecimal quantityBD = BigDecimal.valueOf(quantity);
-            BigDecimal productTotal = productPrice.multiply(quantityBD); // Usa multiply per la moltiplicazione
-
-            // Aggiungi al totale
-            total = total.add(productTotal);
         }
-        return total;
-    }
+        String pickupDateTimeFormatted = orderRequest.pickupDateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 
-    public Response acceptAnOrder(AcceptOrder acceptOrder){
-        Order foundOrder = findById(acceptOrder.orderId);
-
-        if (foundOrder == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-
-        String responseEntity;
-        String orderStatus;
-        if (acceptOrder.accepted){
-            orderStatus = "Accepted";
-            responseEntity = "Order accepted";
-        }else {
-            orderStatus = "Rejected";
-            responseEntity = "Order rejected";
-        }
-
-        foundOrder.status = orderStatus;
-        update(foundOrder);
-        return Response.ok().entity(responseEntity).build();
+        return  "<p>Data di ritiro: " + pickupDateTimeFormatted + "</p>"
+                + "<p>Note: " + (orderRequest.notes != null ? orderRequest.notes : "Nessuna") + "</p>"
+                + "<p>Prodotti:</p>"
+                + "<ul>" + productDetails + "</ul>"
+                + "<p>Prezzo totale: " + cart.price + "€</p>";
     }
 }
