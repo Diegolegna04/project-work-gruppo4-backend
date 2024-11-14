@@ -20,18 +20,8 @@ public class CartResource {
         this.authRepository = authRepository;
     }
 
-    // TODO: non devi poter inserire una quantità negativa così da abbassare il prezzo
-    // TODO: se quantity di un prodotto = 0 elimina il prodotto dalla lista products
-    // TODO: come è possibile che da front posso eliminare un prodotto e modificare quantità dal carrello ma non ho il metodo in back??????
 
-    // JSON FOR SIMULATING THE POST
-//    {
-//        "idProduct": 15,
-//        "quantity": 3
-//    }
-
-
-    //Show cart method
+    // SHOW CART METHOD
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Cart showCart(@CookieParam("SESSION_COOKIE") String sessionCookie) {
@@ -39,20 +29,14 @@ public class CartResource {
         return service.find("idUser", utente.getId()).firstResult();
     }
 
-    // Add a product to cart method
-    // TODO: non devi poter inserire una quantità negativa così da abbassare il prezzo
-    // TODO: se quantity di un prodotto = 0 elimina il prodotto dalla lista products
-    // TODO: come è possibile che da front posso eliminare un prodotto e modificare quantità dal carrello ma non ho il metodo in back??????
-
     // JSON FOR SIMULATING THE POST
 //    {
 //        "idProduct": 15,
 //        "quantity": 3
 //    }
 
-    // Add a product to cart method
+    // ADD A PRODUCT TO CART METHOD
     @POST
-    @Path("/add")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response addProductToCart(@CookieParam("SESSION_COOKIE") String sessionCookie, Order.ProductItem product) {
@@ -61,9 +45,9 @@ public class CartResource {
         return service.addProductToCart(utente.getId(), product);
     }
 
-    // Delete a single product from the cart
+    // DELETE A PRODUCT FROM CART METHOD
     @DELETE
-    @Path("/delete/{idProduct}")
+    @Path("/{idProduct}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response deleteProductFromCart(@CookieParam("SESSION_COOKIE") String sessionCookie, @PathParam("idProduct") Integer idProduct) {
         Utente utente = authRepository.getUtenteBySessionCookie(sessionCookie);
