@@ -1,9 +1,15 @@
 package com.example.persistence.model;
 
+import com.example.rest.model.OrderDateRequest;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
+
+import java.math.BigDecimal;
+import java.sql.Time;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -20,11 +26,11 @@ public class Order extends PanacheMongoEntity {
     @BsonProperty("status")
     public String status;
     @BsonProperty("price")
-    public Double price;
+    public BigDecimal price;
     @BsonProperty("order_date")
     public Date orderDate;
-    @BsonProperty("pickup_date")
-    public Date pickupDate;
+    @BsonProperty("pickup_date_time")
+    public OrderDateRequest pickupDateTime;
 
     public static class ProductItem {
         @BsonProperty("id_product")
@@ -36,9 +42,9 @@ public class Order extends PanacheMongoEntity {
 
 
     public Order() {
-
     }
-    public Order(ObjectId id, List<ProductItem> products, String email, String phone, String status, Double price, Date orderDate, Date pickupDate) {
+
+    public Order(ObjectId id, List<ProductItem> products, String email, String phone, String status, BigDecimal price, Date orderDate, OrderDateRequest pickupDateTime) {
         this.id = id;
         this.products = products;
         this.email = email;
@@ -46,7 +52,7 @@ public class Order extends PanacheMongoEntity {
         this.status = status;
         this.price = price;
         this.orderDate = orderDate;
-        this.pickupDate = pickupDate;
+        this.pickupDateTime = pickupDateTime;
     }
 
     public ObjectId getId() {
@@ -89,11 +95,11 @@ public class Order extends PanacheMongoEntity {
         this.status = status;
     }
 
-    public Double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 
@@ -105,11 +111,11 @@ public class Order extends PanacheMongoEntity {
         this.orderDate = orderDate;
     }
 
-    public Date getPickupDate() {
-        return pickupDate;
+    public OrderDateRequest getPickupDateTime() {
+        return pickupDateTime;
     }
 
-    public void setPickupDate(Date pickupDate) {
-        this.pickupDate = pickupDate;
+    public void setPickupDateTime(OrderDateRequest pickupDateTime) {
+        this.pickupDateTime = pickupDateTime;
     }
 }
