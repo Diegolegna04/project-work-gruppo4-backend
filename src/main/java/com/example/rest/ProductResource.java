@@ -77,16 +77,17 @@ public class ProductResource {
 
     // MODIFY A PRODUCT METHOD
     @PUT
+    @Path("/{productId}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response modifyProduct(@CookieParam("SESSION_COOKIE") String sessionCookie, Product product){
+    public Response modifyProduct(@CookieParam("SESSION_COOKIE") String sessionCookie, @PathParam("productId") Integer productId, ProductRequest productRequest){
         // Check if the user is logged in
         if (sessionService.getUserRoleBySessionCookie(sessionCookie) == null) {
             return Response.status(Response.Status.UNAUTHORIZED).entity("Non è stata trovata nessuna sessione per questo utente").build();
         }
         // Check if the user is Admin
         if (sessionService.getUserRoleBySessionCookie(sessionCookie).equals(Ruolo.Admin)) {
-            return service.modifyProduct(product);
+            return service.modifyProduct(productId, productRequest);
         }
         return Response.status(Response.Status.UNAUTHORIZED).entity("Devi essere un admin per poter inserire un prodotto nel database").build();
     }
