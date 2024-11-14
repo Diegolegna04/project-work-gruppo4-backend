@@ -40,7 +40,6 @@ public class AuthService implements PanacheRepository<Utente> {
         this.cartService = cartService;
     }
 
-    // TODO: nella classe Utente se estendo con PanacheEntity posso non inserire l'id (sia come private Integer che come generativeStrategy)
 
     @Transactional
     public Response registerUser(UtenteRegisterRequest u) throws EmailNotAvailable, TelephoneNotAvailable, ContactNotInserted, PasswordCannotBeEmpty {
