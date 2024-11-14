@@ -20,6 +20,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -39,6 +40,7 @@ public class AuthService implements PanacheRepository<Utente> {
         this.cartService = cartService;
     }
 
+    // TODO: nella classe Utente se estendo con PanacheEntity posso non inserire l'id (sia come private Integer che come generativeStrategy)
 
     @Transactional
     public Response registerUser(UtenteRegisterRequest u) throws EmailNotAvailable, TelephoneNotAvailable, ContactNotInserted, PasswordCannotBeEmpty {
@@ -48,7 +50,7 @@ public class AuthService implements PanacheRepository<Utente> {
         }
 
         // If the user inserted email as contact method
-        if (u.getEmail() != null && !u.getEmail().isEmpty()){
+        if (u.getEmail() != null && !u.getEmail().isEmpty()) {
             // If the inserted email is already in use throw EmailNotAvailable
             if (repository.utenteWithMailAlreadyExists(u.getEmail()).isPresent()) {
                 throw new EmailNotAvailable();
@@ -141,7 +143,7 @@ public class AuthService implements PanacheRepository<Utente> {
         // If credentials are wrong checkCredentials throws a WrongUsernameOrPasswordException
         Integer idUtente = checkCredentials(u.getEmail(), u.getTelefono(), u.getPassword());
 
-        if (sessionService.userSessionAlreadyExists(idUtente)){
+        if (sessionService.userSessionAlreadyExists(idUtente)) {
             throw new LoginNotPossible();
         }
         // Create a new session
@@ -180,7 +182,6 @@ public class AuthService implements PanacheRepository<Utente> {
     }
 
 
-
     private String UUIDGenerator() {
         return UUID.randomUUID().toString();
     }
@@ -212,30 +213,10 @@ public class AuthService implements PanacheRepository<Utente> {
     }
 
     // Get user by the session cookie value
-    public UtenteResponse getUtenteBySessionCookie(String sessionCookie){
+    public UtenteResponse getUtenteBySessionCookie(String sessionCookie) {
         return repository.getUtenteAccountBySessionCookie(sessionCookie);
     }
 
-    public Response updateUtente(String sessionCookie, UtenteResponse u) {
-        Utente utente = repository.getUtenteBySessionCookie(sessionCookie);
-        if (utente == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Utente non trovato").build();
-        }
-        if (u.getNome() != null && !u.getNome().isEmpty()) {
-            utente.setNome(u.getNome());
-        }
-        if (u.getCognome() != null && !u.getCognome().isEmpty()) {
-            utente.setCognome(u.getCognome());
-        }
-        if (u.getEmail() != null && !u.getEmail().isEmpty()) {
-            utente.setEmail(u.getEmail());
-        }
-        if (u.getTelefono() != null && !u.getTelefono().isEmpty()) {
-            utente.setTelefono(u.getTelefono());
-        }
-        repository.persist(utente);
-        return Response.ok("Utente aggiornato con successo").build();
-    }
 
     public String getRole(String sessionCookie) {
         Utente utente = repository.getUtenteBySessionCookie(sessionCookie);
@@ -244,4 +225,62 @@ public class AuthService implements PanacheRepository<Utente> {
         }
         return utente.getRuolo().toString();
     }
+
+    public Response getResponse(String sessionCookie, Map<String, String> campiAggiornati) {
+        // Verifica che il cookie di sessione sia presente
+        if (sessionCookie == null || sessionCookie.isEmpty()) {
+            return Response.status(Response.Status.UNAUTHORIZED).entity("Session cookie mancante").build();
+        }
+        // Verifica che i campi aggiornati siano presenti
+        if (campiAggiornati == null || campiAggiornati.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Nessun campo fornito per l'aggiornamento").build();
+        }
+
+        try {
+            // Estrai la chiave e il valore da aggiornare
+            String campo = campiAggiornati.keySet().iterator().next();
+            String valore = campiAggiornati.get(campo);
+
+            // Esegui l'aggiornamento del database
+            boolean aggiornamentoRiuscito = updateUtente(sessionCookie, campo, valore);
+
+            if (aggiornamentoRiuscito) {
+                return Response.ok("Dato aggiornato con successo").build();
+            } else {
+                return Response.status(Response.Status.NOT_MODIFIED).entity("Aggiornamento fallito").build();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Errore interno al server").build();
+        }
+    }
+
+@Transactional
+public boolean updateUtente(String sessionCookie, String campo, String valore) {
+    Utente utente = repository.getUtenteBySessionCookie(sessionCookie);
+    if (utente == null) {
+        return false;
+    }
+    switch (campo) {
+        case "nome":
+            utente.setNome(valore);
+            break;
+        case "cognome":
+            utente.setCognome(valore);
+            break;
+        case "email":
+            utente.setEmail(valore);
+            break;
+        case "telefono":
+            utente.setTelefono(valore);
+            break;
+        case "password":
+            utente.setPassword(repository.hashPassword(valore));
+            break;
+        default:
+            return false;
+    }
+    persist(utente);
+    return true;
+}
 }
