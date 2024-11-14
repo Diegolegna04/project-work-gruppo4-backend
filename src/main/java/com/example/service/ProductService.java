@@ -8,7 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import org.bson.types.ObjectId;
-
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -27,6 +27,7 @@ public class ProductService implements PanacheRepository<Product> {
         this.repository = repository;
         this.ingredientListService = ingredientListService;
     }
+
 
 
     @Transactional
@@ -95,24 +96,10 @@ public class ProductService implements PanacheRepository<Product> {
         }
     }
 
-    private void saveImage(String base64Image, String fileName) throws IOException {
-        // Split the string and get the encoded part
-        String[] parts = base64Image.split(",");
-        String imageData = parts[1];
-        // Decode the image into a byte array
-        byte[] imageBytes = Base64.getDecoder().decode(imageData);
-
-        // Save the image in this path
-        Path path = Paths.get("C:/MY SCUOLA/PW4/project-work-gruppo4-frontend/public/prodotti/" + fileName);
-        try (FileOutputStream fos = new FileOutputStream(path.toFile())) {
-            fos.write(imageBytes);
-        }
-    }
-
     @Transactional
-    public Response modifyProduct(Product product){
+    public Response modifyProduct(Integer productId, ProductRequest productRequest){
         // Found the product
-        Product foundProduct = findById(Long.valueOf(product.getId()));
+        Product foundProduct = findById(Long.valueOf(productId));
 
         if (foundProduct == null) {
             return Response.status(Response.Status.NOT_FOUND)
@@ -121,14 +108,14 @@ public class ProductService implements PanacheRepository<Product> {
         }
 
         // Update the product
-        foundProduct.setName(product.getName());
-        foundProduct.setDescription(product.getDescription());
-        foundProduct.setPrice(product.getPrice());
-        foundProduct.setQuantity(product.getQuantity());
-        foundProduct.setIngredientListId(product.getIngredientListId());
-        foundProduct.setCategory(product.getCategory());
-        foundProduct.setImage(product.getImage());
-        foundProduct.setShowToUser(product.getShowToUser());
+        foundProduct.setName(productRequest.getName());
+        foundProduct.setDescription(productRequest.getDescription());
+        foundProduct.setPrice(productRequest.getPrice());
+        foundProduct.setQuantity(productRequest.getQuantity());
+        foundProduct.setIngredientListId(String.valueOf(addIngredientList(productRequest.getIngredientList())));
+        foundProduct.setCategory(productRequest.getCategory());
+        foundProduct.setImage(productRequest.getImage());
+        foundProduct.setShowToUser(productRequest.getShowToUser());
 
         persist(foundProduct);
 
@@ -145,8 +132,10 @@ public class ProductService implements PanacheRepository<Product> {
                     .entity("Prodotto non trovato")
                     .build();
         }
-        // Before deleting the product get its ingredientListId
+        // Before deleting the product get its ingredientListId and image
         String foundProductIngredientListId = foundProduct.getIngredientListId();
+        String foundProductImage = foundProduct.getImage();
+
         repository.deleteById(Long.valueOf(foundProduct.getId()));
 
         // If the deleted product is the only one that have a certain list of ingredients, delete this list too
@@ -155,8 +144,33 @@ public class ProductService implements PanacheRepository<Product> {
             ingredientListService.removeIngredientList(new ObjectId(foundProductIngredientListId));
         }
 
+        // Delete the image file if it exists
+        File imageFile = new File(foundProductImage);
+        if (imageFile.exists()) {
+            if (!imageFile.delete()) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity("Errore durante l'eliminazione dell'immagine")
+                        .build();
+            }
+        }
+
         return Response.ok()
                 .entity("Prodotto eliminato")
                 .build();
+    }
+
+
+
+    private void saveImage(String base64Image, String fileName) throws IOException {
+        // Split the string and get the encoded part
+        String[] parts = base64Image.split(",");
+        String imageData = parts[1];
+        // Decode the image into a byte array
+        byte[] imageBytes = Base64.getDecoder().decode(imageData);
+        // Save the image in this path
+        Path path = Paths.get("C:/MY SCUOLA/PW4/project-work-gruppo4-frontend/public/prodotti/" + fileName);
+        try (FileOutputStream fos = new FileOutputStream(path.toFile())) {
+            fos.write(imageBytes);
+        }
     }
 }
