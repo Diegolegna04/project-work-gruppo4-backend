@@ -41,8 +41,8 @@ public class Order extends PanacheMongoEntity {
 
 
     public Order() {
-
     }
+
     public Order(ObjectId id, List<ProductItem> products, String email, String phone, String status, BigDecimal price, Date orderDate, OrderRequest pickupDateTime, String notes) {
         this.id = id;
         this.products = products;
@@ -110,6 +110,7 @@ public class Order extends PanacheMongoEntity {
     public void setOrderDate(Date orderDate) {
         this.orderDate = orderDate;
     }
+
 
     public OrderRequest getPickupDateTime() {
         return pickupDateTime;

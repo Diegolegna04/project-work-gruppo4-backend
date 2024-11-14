@@ -43,4 +43,10 @@ public class CartService implements PanacheMongoRepository<Cart> {
     public Response addProductToCart(Integer idUtente, Order.ProductItem product){
         return repository.addProductToCart(idUtente, product);
     }
+
+
+
+    public Response deleteProductFromCart(Integer id, Integer idProduct) {
+        return repository.deleteProductFromCart(id, idProduct);
+    }
 }

@@ -13,6 +13,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 
+import java.util.Map;
+
 
 @Path("/auth")
 public class AuthResource {
@@ -96,7 +98,9 @@ public class AuthResource {
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updateUtente (@CookieParam("SESSION_COOKIE") String sessionCookie, UtenteResponse u) {
-        return service.updateUtente(sessionCookie, u);
+    public Response updateUtente(@CookieParam("SESSION_COOKIE") String sessionCookie, Map<String, String> campiAggiornati) {
+        return service.getResponse(sessionCookie, campiAggiornati);
     }
+
+
 }

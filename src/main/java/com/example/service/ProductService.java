@@ -20,6 +20,7 @@ import java.util.List;
 @ApplicationScoped
 public class ProductService implements PanacheRepository<Product> {
 
+    public static final String PATH = "C:/Users/aless/WebstormProjects/project-work-gruppo4-frontend/public/prodotti/";
     private final ProductRepository repository;
     private final IngredientListService ingredientListService;
 
@@ -75,8 +76,7 @@ public class ProductService implements PanacheRepository<Product> {
 
             try {
                 saveImage(base64Image, fileName);
-                // Set the image path to save in DB
-                newProduct.setImage("C:/MY SCUOLA/PW4/project-work-gruppo4-frontend/public/prodotti/" + fileName);
+                newProduct.setImage(PATH + fileName);
             } catch (IOException e) {
                 e.printStackTrace();
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -168,7 +168,7 @@ public class ProductService implements PanacheRepository<Product> {
         // Decode the image into a byte array
         byte[] imageBytes = Base64.getDecoder().decode(imageData);
         // Save the image in this path
-        Path path = Paths.get("C:/MY SCUOLA/PW4/project-work-gruppo4-frontend/public/prodotti/" + fileName);
+        Path path = Paths.get(PATH + fileName);
         try (FileOutputStream fos = new FileOutputStream(path.toFile())) {
             fos.write(imageBytes);
         }
