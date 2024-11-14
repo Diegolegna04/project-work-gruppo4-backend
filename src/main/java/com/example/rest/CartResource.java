@@ -20,17 +20,6 @@ public class CartResource {
         this.authRepository = authRepository;
     }
 
-    // TODO: non devi poter inserire una quantità negativa così da abbassare il prezzo
-    // TODO: se quantity di un prodotto = 0 elimina il prodotto dalla lista products
-    // TODO: come è possibile che da front posso eliminare un prodotto e modificare quantità dal carrello ma non ho il metodo in back??????
-
-    // JSON FOR SIMULATING THE POST
-//    {
-//        "idProduct": 15,
-//        "quantity": 3
-//    }
-
-
     //Show cart method
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -38,11 +27,6 @@ public class CartResource {
         Utente utente = authRepository.getUtenteBySessionCookie(sessionCookie);
         return service.find("idUser", utente.getId()).firstResult();
     }
-
-    // Add a product to cart method
-    // TODO: non devi poter inserire una quantità negativa così da abbassare il prezzo
-    // TODO: se quantity di un prodotto = 0 elimina il prodotto dalla lista products
-    // TODO: come è possibile che da front posso eliminare un prodotto e modificare quantità dal carrello ma non ho il metodo in back??????
 
     // JSON FOR SIMULATING THE POST
 //    {

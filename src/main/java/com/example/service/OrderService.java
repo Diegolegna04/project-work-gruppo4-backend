@@ -14,12 +14,13 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
 import java.math.BigDecimal;
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.sql.Time;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.quarkus.arc.impl.UncaughtExceptions.LOGGER;
 
@@ -57,7 +58,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
         newOrder.status = "Pending";
         newOrder.price = userCart.price;
         newOrder.orderDate = new Date();
-        newOrder.pickupDateTime = handleOrderDateRequest(orderRequest) ;
+        newOrder.pickupDateTime = handleOrderDateRequest(orderRequest);
         newOrder.notes = orderRequest.notes;
         try {
             persist(newOrder);
@@ -72,12 +73,11 @@ public class OrderService implements PanacheMongoRepository<Order> {
             return Response.status(Response.Status.CREATED)
                     .entity("Ordine creato con successo")
                     .build();
-        }catch (QuantityNotAvailable e) {
+        } catch (QuantityNotAvailable e) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Quantità non disponibile per uno o più prodotti.")
                     .build();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOGGER.error("Errore durante la creazione dell'ordine: ", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Errore durante la creazione dell'ordine.")
@@ -86,7 +86,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
     }
 
     @Transactional
-    public Response acceptAnOrder(AcceptOrder acceptOrder){
+    public Response acceptAnOrder(AcceptOrder acceptOrder) {
         Order foundOrder = findById(acceptOrder.orderId);
 
         if (foundOrder == null) {
@@ -95,10 +95,10 @@ public class OrderService implements PanacheMongoRepository<Order> {
 
         String responseEntity;
         String orderStatus;
-        if (acceptOrder.accepted){
+        if (acceptOrder.accepted) {
             orderStatus = "Accepted";
             responseEntity = "Order accepted";
-        }else {
+        } else {
             orderStatus = "Rejected";
             responseEntity = "Order rejected";
         }
@@ -108,7 +108,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
         return Response.ok().entity(responseEntity).build();
     }
 
-    public List<Order> getAllOrders(){
+    public List<Order> getAllOrders() {
         return listAll();
     }
 
@@ -122,9 +122,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
     }
 
 
-
-
-    private OrderRequest handleOrderDateRequest(OrderRequest orderRequest) throws IllegalArgumentException{
+    private OrderRequest handleOrderDateRequest(OrderRequest orderRequest) throws IllegalArgumentException {
         LocalDateTime requestedDateTime = orderRequest.getPickupDateTime();
 
         // Check if the pickup day is Monday
@@ -182,7 +180,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
         }
 
         Order orderWithSameTime = find("pickup_date_time.pickupDateTime", requestedDateTime).firstResult();
-        if (orderWithSameTime != null){
+        if (orderWithSameTime != null) {
             throw new IllegalArgumentException("Questo orario di ritiro è già occupato da un altro utente");
         }
 
@@ -193,7 +191,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
     }
 
     private void modifyProductQuantity(List<Order.ProductItem> products) throws QuantityNotAvailable, ProductNotAvailable {
-        for (Order.ProductItem item : products){
+        for (Order.ProductItem item : products) {
             Product foundProduct = productRepository.findById(Long.valueOf(item.idProduct));
 
             if (foundProduct != null) {
@@ -208,7 +206,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
     }
 
     private Integer calculateProductNewQuantity(Integer oldQuantity, Integer productQuantity) throws QuantityNotAvailable {
-        if (oldQuantity < productQuantity){
+        if (oldQuantity < productQuantity) {
             throw new QuantityNotAvailable();
         }
         return oldQuantity - productQuantity;
@@ -219,7 +217,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
         return email != null && email.matches(emailRegex);
     }
 
-    private String buildEmailOrderMessage(Cart cart, OrderRequest orderRequest){
+    private String buildEmailOrderMessage(Cart cart, OrderRequest orderRequest) {
         StringBuilder productDetails = new StringBuilder();
         for (Order.ProductItem item : cart.products) {
             Product product = productRepository.findById(Long.valueOf(item.idProduct));
@@ -232,10 +230,63 @@ public class OrderService implements PanacheMongoRepository<Order> {
         }
         String pickupDateTimeFormatted = orderRequest.pickupDateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 
-        return  "<p>Data di ritiro: " + pickupDateTimeFormatted + "</p>"
+        return "<p>Data di ritiro: " + pickupDateTimeFormatted + "</p>"
                 + "<p>Note: " + (orderRequest.notes != null ? orderRequest.notes : "Nessuna") + "</p>"
                 + "<p>Prodotti:</p>"
                 + "<ul>" + productDetails + "</ul>"
                 + "<p>Prezzo totale: " + cart.price + "€</p>";
     }
+
+    public Response getNotAvailablePickupTimes(Date date) {
+
+        // Set of unavailable dates
+        Set<LocalDate> unavailableDates = Set.of(
+                LocalDate.of(2024, 12, 24), // Example of an unavailable date
+                LocalDate.of(2024, 12, 25),
+                LocalDate.of(2024, 12, 26)
+        );
+
+        // Convert Date to LocalDate
+        LocalDate localDate = date.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+
+        // Check if the date is a Monday
+        if (localDate.getDayOfWeek() == DayOfWeek.MONDAY) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Deliveries are not available on Mondays.")
+                    .build();
+        }
+
+        // Check if the date is in the list of unavailable dates
+        if (unavailableDates.contains(localDate)) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("The selected date is not available.")
+                    .build();
+        }
+
+        // Convert LocalDate to Date for the start and end of the day
+        Date startOfDay = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date endOfDay = Date.from(localDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        // Find all orders with a pickup_date_time within the same date
+        List<Order> orders = find("{'pickupDateTime': { $gte: ?1, $lte: ?2 }}", startOfDay, endOfDay).list();
+
+        // Extract only the occupied times
+        List<Time> occupiedTimes = orders.stream()
+                .map(order -> {
+                    // Access the pickupDateTime field inside OrderRequest
+                    LocalDateTime pickupTime = order.pickupDateTime.pickupDateTime;  // pickupDateTime is of type LocalDateTime
+
+                    // Convert LocalDateTime to LocalTime and then to Time
+                    LocalTime localTime = pickupTime.toLocalTime();  // Extract only the time
+                    return Time.valueOf(localTime);  // Convert LocalTime to Time
+                })
+                .collect(Collectors.toList());
+
+        // Return the occupied times as a response
+        return Response.ok(occupiedTimes).build();
+    }
+
+
 }
