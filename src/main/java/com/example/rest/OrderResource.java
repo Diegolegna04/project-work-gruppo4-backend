@@ -52,9 +52,9 @@ public class OrderResource {
         if (utente.getRuolo().equals(Ruolo.User)) {
             String contact;
             if (utente.getEmail() != null){
-                contact = utente.getTelefono();
-            }else {
                 contact = utente.getEmail();
+            }else {
+                contact = utente.getTelefono();
             }
             List<Order> orders = service.getAllUserOrders(contact);
             return Response.ok(orders).build();
