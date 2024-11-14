@@ -12,6 +12,7 @@ public class OrderRequest {
     public OrderRequest() {
 
     }
+
     public OrderRequest(LocalDateTime pickupDateTime, String notes) {
         this.pickupDateTime = pickupDateTime;
         this.notes = notes;

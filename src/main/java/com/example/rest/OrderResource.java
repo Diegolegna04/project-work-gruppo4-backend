@@ -9,6 +9,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.Date;
 import java.util.List;
 
 
@@ -25,11 +26,22 @@ public class OrderResource {
         this.authRepository = authRepository;
     }
 
+    // GET NOT AVAILABLE DATES METHOD
+    @Path("/dates")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response getNotAvailableDates(Date date) {
+        return Response.ok(service.getNotAvailablePickupTimes(date)).build();
+    }
+
+
 
     // JSON FOR SIMULATING THE POST
 //    {
 //        "pickupDateTime": "2025-03-04T13:18:00"
 //    }
+
 
     // MAKE AN ORDER METHOD
     @POST
