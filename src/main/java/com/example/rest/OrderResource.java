@@ -9,6 +9,8 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
 
@@ -31,8 +33,17 @@ public class OrderResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response getNotAvailableDates(Date date) {
-        return Response.ok(service.getNotAvailablePickupTimes(date)).build();
+    public Response getNotAvailableDates(@QueryParam("chosenDate") String chosenDateString) {
+        try {
+            // Convert String to Date
+            LocalDate chosenDate = LocalDate.parse(chosenDateString);
+
+            return Response.ok(service.getNotAvailablePickupTimes(chosenDate)).build();
+        } catch (DateTimeParseException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Invalid date format. Please use 'yyyy-MM-dd'.")
+                    .build();
+        }
     }
 
 
@@ -41,7 +52,6 @@ public class OrderResource {
 //    {
 //        "pickupDateTime": "2025-03-04T13:18:00"
 //    }
-
 
     // MAKE AN ORDER METHOD
     @POST
@@ -54,7 +64,6 @@ public class OrderResource {
     }
 
 
-    // TODO: sposta in service
     // GET ALL MY ORDERS (AS I'M LOGGED IN AS A USER) METHOD
     @GET
     @Path("/user")

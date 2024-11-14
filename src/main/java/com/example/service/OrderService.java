@@ -237,21 +237,16 @@ public class OrderService implements PanacheMongoRepository<Order> {
                 + "<p>Prezzo totale: " + cart.price + "€</p>";
     }
 
-    public Response getNotAvailablePickupTimes(Date date) {
+    public Response getNotAvailablePickupTimes(LocalDate localDate) {
 
-        // Set of unavailable dates
+        // Set unavailable dates (XMAS days for example)
         Set<LocalDate> unavailableDates = Set.of(
-                LocalDate.of(2024, 12, 24), // Example of an unavailable date
+                LocalDate.of(2024, 12, 24),
                 LocalDate.of(2024, 12, 25),
                 LocalDate.of(2024, 12, 26)
         );
 
-        // Convert Date to LocalDate
-        LocalDate localDate = date.toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate();
-
-        // Check if the date is a Monday
+        // Check if the date is a Monday (bakery is closed on monday)
         if (localDate.getDayOfWeek() == DayOfWeek.MONDAY) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Deliveries are not available on Mondays.")
@@ -261,32 +256,33 @@ public class OrderService implements PanacheMongoRepository<Order> {
         // Check if the date is in the list of unavailable dates
         if (unavailableDates.contains(localDate)) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("The selected date is not available.")
+                    .entity("Questo giorno non è disponibile.")
                     .build();
         }
 
         // Convert LocalDate to Date for the start and end of the day
         Date startOfDay = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-        Date endOfDay = Date.from(localDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date endOfDay = Date.from(localDate.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant());
 
         // Find all orders with a pickup_date_time within the same date
-        List<Order> orders = find("{'pickupDateTime': { $gte: ?1, $lte: ?2 }}", startOfDay, endOfDay).list();
+        List<Order> orders = Order.find("{'pickup_date_time.pickupDateTime': { $gte: ?1, $lte: ?2 }}", startOfDay, endOfDay).list();
 
-        // Extract only the occupied times
+        // Get a list of not available pickup times
         List<Time> occupiedTimes = orders.stream()
                 .map(order -> {
-                    // Access the pickupDateTime field inside OrderRequest
-                    LocalDateTime pickupTime = order.pickupDateTime.pickupDateTime;  // pickupDateTime is of type LocalDateTime
-
-                    // Convert LocalDateTime to LocalTime and then to Time
-                    LocalTime localTime = pickupTime.toLocalTime();  // Extract only the time
-                    return Time.valueOf(localTime);  // Convert LocalTime to Time
+                    LocalDateTime pickupTime = order.pickupDateTime.getPickupDateTime();
+                    System.out.println("Orario di ritiro trovato: " + pickupTime);  // Log per visualizzare gli orari
+                    LocalTime localTime = pickupTime.toLocalTime();  // Estrai solo l'orario
+                    return Time.valueOf(localTime);  // Converte in Time
                 })
                 .collect(Collectors.toList());
 
-        // Return the occupied times as a response
+        if (occupiedTimes.isEmpty()) {
+            return Response.status(Response.Status.OK)
+                    .entity("Sono disponibili tutti gli orari per il ritiro il giorno " + localDate)
+                    .build();
+        }
+
         return Response.ok(occupiedTimes).build();
     }
-
-
 }
