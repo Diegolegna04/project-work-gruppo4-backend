@@ -20,7 +20,7 @@ import java.util.List;
 @ApplicationScoped
 public class ProductService implements PanacheRepository<Product> {
 
-    public static final String PATH = "C:/Users/aless/WebstormProjects/project-work-gruppo4-frontend/public/prodotti/";
+    public static final String PATH = "C:/MY SCUOLA/PW4/project-work-gruppo4-frontend/public/prodotti/";
     private final ProductRepository repository;
     private final IngredientListService ingredientListService;
 

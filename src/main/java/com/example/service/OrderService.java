@@ -55,7 +55,7 @@ public class OrderService implements PanacheMongoRepository<Order> {
         } else {
             newOrder.phone = user.getTelefono();
         }
-        newOrder.status = "Pending";
+        newOrder.status = "In attesa";
         newOrder.price = userCart.price;
         newOrder.orderDate = new Date();
         newOrder.pickupDateTime = handleOrderDateRequest(orderRequest);
@@ -96,10 +96,10 @@ public class OrderService implements PanacheMongoRepository<Order> {
         String responseEntity;
         String orderStatus;
         if (acceptOrder.accepted) {
-            orderStatus = "Accepted";
+            orderStatus = "Accettato";
             responseEntity = "Order accepted";
         } else {
-            orderStatus = "Rejected";
+            orderStatus = "Rifiutato";
             responseEntity = "Order rejected";
         }
 

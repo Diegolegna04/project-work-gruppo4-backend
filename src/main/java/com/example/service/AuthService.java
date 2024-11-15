@@ -77,8 +77,13 @@ public class AuthService implements PanacheRepository<Utente> {
         // Persist it
         persist(newUtente);
         // Send the verification link to the user email
-        sendVerificationEmail(newUtente.getId(), newUtente.getEmail());
-        return Response.ok("Registrazione avvenuta con successo.\nControlla la tua casella di posta e verifica la tua email!").build();
+        if (newUtente.getEmail() != null && !newUtente.getEmail().isEmpty()) {
+            sendVerificationEmail(newUtente.getId(), newUtente.getEmail());
+            return Response.ok("Registrazione avvenuta con successo.\nControlla la tua casella di posta e verifica la tua email!").build();
+        }else {
+            return Response.ok("Registrazione avvenuta con successo.\nA breve Giacomo, il proprietario, ti invierà un sms per verificare che il telefono inserito è corretto").build();
+        }
+
     }
 
     @Transactional
@@ -254,32 +259,32 @@ public class AuthService implements PanacheRepository<Utente> {
         }
     }
 
-@Transactional
-public boolean updateUtente(String sessionCookie, String campo, String valore) {
-    Utente utente = repository.getUtenteBySessionCookie(sessionCookie);
-    if (utente == null) {
-        return false;
-    }
-    switch (campo) {
-        case "nome":
-            utente.setNome(valore);
-            break;
-        case "cognome":
-            utente.setCognome(valore);
-            break;
-        case "email":
-            utente.setEmail(valore);
-            break;
-        case "telefono":
-            utente.setTelefono(valore);
-            break;
-        case "password":
-            utente.setPassword(repository.hashPassword(valore));
-            break;
-        default:
+    @Transactional
+    public boolean updateUtente(String sessionCookie, String campo, String valore) {
+        Utente utente = repository.getUtenteBySessionCookie(sessionCookie);
+        if (utente == null) {
             return false;
+        }
+        switch (campo) {
+            case "nome":
+                utente.setNome(valore);
+                break;
+            case "cognome":
+                utente.setCognome(valore);
+                break;
+            case "email":
+                utente.setEmail(valore);
+                break;
+            case "telefono":
+                utente.setTelefono(valore);
+                break;
+            case "password":
+                utente.setPassword(repository.hashPassword(valore));
+                break;
+            default:
+                return false;
+        }
+        persist(utente);
+        return true;
     }
-    persist(utente);
-    return true;
-}
 }
